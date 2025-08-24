@@ -13,6 +13,19 @@ declare module "next-auth" {
       hasLifetimeAccess: boolean;
     } & DefaultSession["user"]
   }
+  
+  interface User {
+    role: string;
+    hasLifetimeAccess: boolean;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: string;
+    hasLifetimeAccess: boolean;
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -55,20 +68,26 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       // 添加用户 ID、角色和终身访问权限到 session
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.hasLifetimeAccess = token.hasLifetimeAccess as boolean;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.hasLifetimeAccess = token.hasLifetimeAccess;
       }
       return session;
     },
     async jwt({ token, user }) {
-      // 添加用户 ID、角色和终身访问权限到 token
+      // 首次登录时，将用户信息添加到 JWT
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-        token.hasLifetimeAccess = user.hasLifetimeAccess;
+        token.role = (user as any).role;
+        token.hasLifetimeAccess = (user as any).hasLifetimeAccess;
       }
       return token;
-    },
+    }
+  },
+  pages: {
+    signIn: "/login",
+  },
+  session: {
+    strategy: "jwt"
   }
 };

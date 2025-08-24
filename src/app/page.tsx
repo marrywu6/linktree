@@ -1,18 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import {  useSearchParams, useRouter, usePathname } from "next/navigation";
-import { WebsiteSidebar } from "@/components/website/sidebar";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { BookmarkGrid } from "@/components/bookmark/BookmarkGrid";
-import { Header } from "@/components/website/header";
-
-import { Footer } from "@/components/website/footer";
-import { TopBanner } from "@/components/website/top-banner";
-import { Advertisement } from "@/components/advertisement";
-
-import { GetStarted } from "@/components/website/get-started";
-import { BackToTop } from "@/components/website/back-to-top";
 
 import { Collection } from "@prisma/client";
 import { SearchBar } from "@/components/search/SearchBar";
@@ -49,188 +40,124 @@ function SearchParamsComponent() {
     const fetchCollectionsAndSetDefault = async () => {
       try {
         setIsLoading(true);
-        // 如果用户已登录，获取所有可访问的集合；否则只获取公开集合
-        const response = await fetch("/api/collections");
+        const response = await fetch('/api/collections');
         const data = await response.json();
-        setCollections(data);
-
-        // set selected collection by slug
-        if (collectionSlug) {
-          const currentCollection = data.find(
-            (c: Collection) => c.slug === collectionSlug
-          );
-          if (currentCollection) {
-            setSelectedCollectionId(currentCollection.id);
-            setCollectionName(currentCollection.name);
+        
+        if (data.success) {
+          setCollections(data.data);
+          
+          let targetCollection;
+          if (collectionSlug) {
+            targetCollection = data.data.find((c: Collection) => c.slug === collectionSlug);
           }
-        } else {
-          const defaultCollection = data[0];
-          setSelectedCollectionId(defaultCollection?.id ?? "");
-          setCollectionName(defaultCollection?.name ?? "");
+          
+          if (!targetCollection && data.data.length > 0) {
+            targetCollection = data.data[0];
+          }
+          
+          if (targetCollection) {
+            setSelectedCollectionId(targetCollection.id);
+            setCollectionName(targetCollection.name);
+          }
         }
       } catch (error) {
-        console.error("获取 collections 失败:", error);
+        console.error('Error fetching collections:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCollectionsAndSetDefault();
-  }, [searchParams]);
+  }, [collectionSlug, refreshTrigger]);
 
+  const handleRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
-
-  const handleCollectionChange = (id: string) => {
-    const collection = collections.find((c) => c.id === id);
-    if (!collection) return;
-
-    setSelectedCollectionId(id);
-    setCollectionName(collection.name || "");
-    setCurrentFolderId(null);
-
-    routeToFolderInCollection(collection);
-  };
-
-  const handleFolderSelect = (id: string | null) => {
-    const collection = collections.find((c) => c.id === selectedCollectionId);
-    if (!collection) return;
-
-    routeToFolderInCollection(collection, id);
-    setCurrentFolderId(id);
-  };
-
-  const refreshData = useCallback(async () => {
-    if (selectedCollectionId) {
-      try {
-        setRefreshTrigger((prev) => prev + 1);
-      } catch (error) {
-        console.error("刷新数据失败:", error);
-      }
-    }
-  }, [selectedCollectionId, currentFolderId]);
-
-  const handleSearch = async (query: string, scope: 'all' | 'current') => {
-    if (!query.trim()) {
-      return;
-    }
-
-    // 在实际实现中，这里会处理常规搜索
-    console.log("Regular search:", query, scope);
-  };
-
-  const handleAISearch = async (query: string) => {
-    if (!query.trim()) {
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // 跳转到搜索结果页面
-      router.push(`/search-results?q=${encodeURIComponent(query)}`);
-    } catch (error) {
-      console.error('AI Search failed:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <TopBanner />
-      {/* 顶部广告位 */}
-      <Advertisement position="header" />
-      <div className="flex flex-1">
-        <SidebarProvider>
-          {
-          isLoading && !collections.length ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">LinkTree</h1>
+          <p className="text-gray-600">Transform your bookmarks into a beautiful navigation site</p>
+        </div>
+
+        {/* Search Section */}
+        <div className="mb-8 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              {useAISearch ? (
+                <AISearchBar />
+              ) : (
+                <SearchBar />
+              )}
             </div>
-          ) :
-          selectedCollectionId || collectionSlug ? (
-            <>
-              <WebsiteSidebar
-                selectedCollectionId={selectedCollectionId}
-                currentFolderId={currentFolderId}
-                onCollectionChange={handleCollectionChange}
-                onFolderSelect={handleFolderSelect}
-              />
-              <div className="flex flex-1 flex-col space-y-8">
-                <Header
-                  selectedCollectionId={selectedCollectionId}
-                  currentFolderId={currentFolderId}
-                  onBookmarkAdded={refreshData}
-                />
-                
-                {/* 搜索栏 */}
-                <div className="px-6">
-                  <div className="flex items-center gap-4 mb-4">
-                    <Button
-                      variant={useAISearch ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setUseAISearch(true)}
-                      className={useAISearch ? "bg-black text-white" : ""}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Search
-                    </Button>
-                    <Button
-                      variant={!useAISearch ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setUseAISearch(false)}
-                      className={!useAISearch ? "bg-black text-white" : ""}
-                    >
-                      Regular Search
-                    </Button>
-                  </div>
-                  
-                  {useAISearch ? (
-                    <AISearchBar onSearch={handleAISearch} />
-                  ) : (
-                    <SearchBar onSearch={handleSearch} />
-                  )}
-                </div>
-                
-                {/* 顶部广告位 */}
-                <Advertisement position="content_top" />
-                
-                <div className="flex-1 overflow-y-auto">
-                  <BookmarkGrid
-                    key={`${selectedCollectionId}-${currentFolderId}`}
-                    collectionId={selectedCollectionId}
-                    currentFolderId={currentFolderId}
-                    collectionName={collectionName}
-                    collectionSlug={
-                      collections.find((c) => c.id === selectedCollectionId)
-                        ?.slug || ""
-                    }
-                    refreshTrigger={refreshTrigger}
-                  />
-                </div>
-                
-                {/* 底部广告位 */}
-                <Advertisement position="content_bottom" />
-                <Footer />
-                {/* 底部广告位 */}
-                <Advertisement position="footer" />
+            <Button
+              onClick={() => setUseAISearch(!useAISearch)}
+              variant={useAISearch ? "default" : "outline"}
+              size="icon"
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-4">Collections</h2>
+              <div className="space-y-2">
+                {collections.map((collection) => (
+                  <button
+                    key={collection.id}
+                    onClick={() => routeToFolderInCollection(collection)}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                      selectedCollectionId === collection.id
+                        ? "bg-blue-100 text-blue-700"
+                        : "hover:bg-gray-100"
+                    }`}
+                  >
+                    {collection.name}
+                  </button>
+                ))}
               </div>
-              <BackToTop />
-            </>
-          ) : (
-            <div className="flex flex-1">
-              <GetStarted />
             </div>
-          )}
-        </SidebarProvider>
+          </div>
+
+          {/* Bookmarks Grid */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold mb-4">Bookmarks</h2>
+              <p className="text-gray-600">Your bookmarks will appear here.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-export default function Page() {
+export default function Home() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SearchParamsComponent />
-    </Suspense>
+    <SidebarProvider>
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      }>
+        <SearchParamsComponent />
+      </Suspense>
+    </SidebarProvider>
   );
 }

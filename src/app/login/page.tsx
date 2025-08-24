@@ -2,12 +2,11 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { Input } from "@/components/common/Input";
-import { Button } from "@/components/common/Button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Github, Twitter } from "lucide-react";
 import Image from "next/image";
-import { revalidateData } from "@/actions/revalidate-data";
 
 
 export default function LoginPage() {
@@ -59,14 +58,13 @@ export default function LoginPage() {
               setError(result.message || "Database initialization failed");
               return;
             }
-            revalidateData();
           } catch (error) {
             // 处理网络错误或解析错误
             setError("Database initialization failed");
             return;
           }
         }
-        router.push("/admin/collections");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (error) {
@@ -118,22 +116,32 @@ export default function LoginPage() {
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              <Input
-                name="email"
-                type="email"
-                label="Email Address"
-                required
-                autoComplete="email"
-                className="h-12"
-              />
-              <Input
-                name="password"
-                type="password"
-                label="Password"
-                required
-                autoComplete="current-password"
-                className="h-12"
-              />
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  className="h-12"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  className="h-12"
+                />
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -165,7 +173,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              variant="primary"
+              variant="default"
               className="w-full h-12 text-base"
               disabled={loading}
             >

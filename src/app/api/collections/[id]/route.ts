@@ -17,20 +17,18 @@ export async function PATCH(
     const { name, ...restData } = await request.json();
     const slug = name ? name.toLowerCase().replace(/\s+/g, '-') : undefined;
 
-    // Check if name or slug already exists (case-insensitive)
+    // Check if name or slug already exists
     if (name) {
       const existingCollection = await prisma.collection.findFirst({
         where: {
           OR: [
             { 
               name: {
-                mode: 'insensitive',
                 equals: name
               }
             },
             { 
               slug: {
-                mode: 'insensitive',
                 equals: slug
               }
             }

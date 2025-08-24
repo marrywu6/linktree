@@ -8,9 +8,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 function getSearchWhereClause(query: string, scope: string, collectionId: string | null, isAuthenticated: boolean) {
   const baseConditions = {
     OR: [
-      { title: { contains: query, mode: 'insensitive' as const } },
-      { description: { contains: query, mode: 'insensitive' as const } },
-      { url: { contains: query, mode: 'insensitive' as const } }
+      { title: { contains: query } },
+      { description: { contains: query } },
+      { url: { contains: query } }
     ]
   };
 
