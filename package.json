@@ -18,7 +18,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:reset": "prisma db push --force-reset",
-    "vercel:build": "prisma generate && prisma db push && next build",
+    "vercel:build": "prisma generate && next build",
     "postinstall": "prisma generate"
   },
   "dependencies": {

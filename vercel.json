@@ -2,6 +2,11 @@
   "buildCommand": "npm run vercel:build",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "build": {
+    "env": {
+      "DATABASE_URL": "postgresql://build:build@localhost:5432/build"
+    }
+  },
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 10
