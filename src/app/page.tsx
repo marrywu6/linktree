@@ -142,7 +142,7 @@ function SearchParamsComponent() {
                 collectionId={selectedCollectionId}
                 currentFolderId={currentFolderId}
                 collectionName={collectionName}
-                collectionSlug={collections.find(c => c.id === selectedCollectionId)?.slug}
+                collectionSlug={collections.find(c => c.id === selectedCollectionId)?.slug || undefined}
                 refreshTrigger={refreshTrigger}
               />
             )}
