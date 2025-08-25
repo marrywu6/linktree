@@ -30,12 +30,22 @@ export default function SetupPage() {
       try {
         const response = await fetch('/api/setup');
         const data = await response.json();
-        
+
         if (data.success && data.data.isSetup) {
           setAlreadySetup(true);
+        } else if (!data.success) {
+          // 显示配置错误信息
+          if (data.error === '数据库配置缺失') {
+            setError('数据库配置缺失，请在 Vercel 中配置 DATABASE_URL 环境变量');
+          } else if (data.error === '数据库连接失败') {
+            setError('数据库连接失败，请检查 DATABASE_URL 配置是否正确');
+          } else {
+            setError(`系统配置错误: ${data.error}`);
+          }
         }
       } catch (error) {
         console.error('检查设置状态失败:', error);
+        setError('无法连接到服务器，请检查网络连接或稍后重试');
       } finally {
         setCheckingSetup(false);
       }
@@ -84,7 +94,20 @@ export default function SetupPage() {
           router.push('/login');
         }, 2000);
       } else {
-        setError(data.error || "创建失败");
+        // 根据错误类型提供更具体的错误信息
+        let errorMessage = data.error || "创建失败";
+
+        if (data.error === '数据库配置缺失') {
+          errorMessage = '数据库配置缺失，请在 Vercel 中配置 DATABASE_URL 环境变量';
+        } else if (data.error === '数据库连接失败') {
+          errorMessage = '数据库连接失败，请检查 DATABASE_URL 配置是否正确';
+        } else if (data.error === '数据库认证失败') {
+          errorMessage = '数据库认证失败，请检查数据库用户名和密码';
+        } else if (data.error === '邮箱已存在') {
+          errorMessage = '该邮箱已被注册，请使用其他邮箱';
+        }
+
+        setError(errorMessage);
         console.error('Setup failed:', data);
       }
     } catch (error) {

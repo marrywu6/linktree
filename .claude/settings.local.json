@@ -15,7 +15,8 @@
       "Bash(npx prisma:*)",
       "Bash(taskkill:*)",
       "Bash(powershell:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "WebFetch(domain:linktree-eight-jade.vercel.app)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\truel\\Downloads\\pintree-main",

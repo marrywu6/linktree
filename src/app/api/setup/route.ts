@@ -4,9 +4,21 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
+    // 检查必要的环境变量
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '数据库配置缺失',
+          details: '请在 Vercel 环境变量中配置 DATABASE_URL'
+        },
+        { status: 500 }
+      );
+    }
+
     // 测试数据库连接
     await prisma.$connect();
-    
+
     // 检查是否已有用户
     const userCount = await prisma.user.count();
     if (userCount > 0) {
@@ -70,20 +82,54 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Setup error:', error);
-    
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
+
+    // 根据错误类型提供更具体的错误信息
+    let errorMessage = '创建管理员账户失败';
+    let details = {};
+
+    if (error instanceof Error) {
+      const errorStr = error.message.toLowerCase();
+
+      if (errorStr.includes('connection') || errorStr.includes('connect')) {
+        errorMessage = '数据库连接失败';
+        details = {
+          type: 'database_connection',
+          suggestion: '请检查 DATABASE_URL 配置是否正确'
+        };
+      } else if (errorStr.includes('authentication') || errorStr.includes('auth')) {
+        errorMessage = '数据库认证失败';
+        details = {
+          type: 'database_auth',
+          suggestion: '请检查数据库用户名和密码'
+        };
+      } else if (errorStr.includes('does not exist')) {
+        errorMessage = '数据库不存在';
+        details = {
+          type: 'database_not_found',
+          suggestion: '请检查数据库名称和连接地址'
+        };
+      } else if (errorStr.includes('unique constraint')) {
+        errorMessage = '邮箱已存在';
+        details = {
+          type: 'duplicate_email',
+          suggestion: '请使用其他邮箱地址'
+        };
+      }
+    }
+
     const errorDetails = {
-      message: errorMessage,
+      message: error instanceof Error ? error.message : '未知错误',
       code: (error as any)?.code,
       meta: (error as any)?.meta,
       environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...details
     };
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: '创建管理员账户失败',
+      {
+        success: false,
+        error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
       },
       { status: 500 }
@@ -96,9 +142,21 @@ export async function POST(request: Request) {
 // 获取系统设置状态
 export async function GET() {
   try {
-    // 首先测试数据库连接
+    // 检查必要的环境变量
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '数据库配置缺失',
+          details: '请在 Vercel 环境变量中配置 DATABASE_URL'
+        },
+        { status: 500 }
+      );
+    }
+
+    // 测试数据库连接
     await prisma.$connect();
-    
+
     const userCount = await prisma.user.count();
     const isSetup = userCount > 0;
 
@@ -108,26 +166,54 @@ export async function GET() {
         isSetup,
         userCount,
         environment: process.env.NODE_ENV,
+        databaseConfigured: true,
         timestamp: new Date().toISOString()
       }
     });
   } catch (error) {
     console.error('Get setup status error:', error);
-    
-    // 返回更详细的错误信息用于调试
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
+
+    // 根据错误类型提供更具体的错误信息
+    let errorMessage = '获取设置状态失败';
+    let details = {};
+
+    if (error instanceof Error) {
+      const errorStr = error.message.toLowerCase();
+
+      if (errorStr.includes('connection') || errorStr.includes('connect')) {
+        errorMessage = '数据库连接失败';
+        details = {
+          type: 'database_connection',
+          suggestion: '请检查 DATABASE_URL 配置是否正确'
+        };
+      } else if (errorStr.includes('authentication') || errorStr.includes('auth')) {
+        errorMessage = '数据库认证失败';
+        details = {
+          type: 'database_auth',
+          suggestion: '请检查数据库用户名和密码'
+        };
+      } else if (errorStr.includes('does not exist')) {
+        errorMessage = '数据库不存在';
+        details = {
+          type: 'database_not_found',
+          suggestion: '请检查数据库名称和连接地址'
+        };
+      }
+    }
+
     const errorDetails = {
-      message: errorMessage,
+      message: error instanceof Error ? error.message : '未知错误',
       code: (error as any)?.code,
       meta: (error as any)?.meta,
       environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...details
     };
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: '获取设置状态失败',
+      {
+        success: false,
+        error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
       },
       { status: 500 }
