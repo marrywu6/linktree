@@ -29,7 +29,7 @@ import {
   Download,
   CheckCircle,
   AlertCircle,
-  Link,
+  Link as LinkIcon,
   Import
 } from "lucide-react"
 import { BookmarkImportDialog } from "@/components/bookmark/BookmarkImportDialog"
@@ -343,7 +343,7 @@ export default function DashboardPage() {
             <Card className="bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
-                  <Link className="h-5 w-5 mr-2 text-purple-600" />
+                  <LinkIcon className="h-5 w-5 mr-2 text-purple-600" />
                   系统工具
                 </CardTitle>
                 <CardDescription>
