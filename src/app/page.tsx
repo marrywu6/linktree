@@ -107,7 +107,7 @@ function SearchParamsComponent() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">书</span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">书签树</h1>
+                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">书签导航树</h1>
               </div>
             </div>
 
