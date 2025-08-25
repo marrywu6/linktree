@@ -241,7 +241,7 @@ function SearchParamsComponent() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-8 w-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 欢迎使用全新书签导航树系统</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 欢迎使用全新书签导航树系统 v2.0</h3>
                   <p className="text-gray-600 mb-6">✨ 全新重构版本 - 现代化设计，完整功能，开始创建您的第一个书签分类，整理您的网站收藏</p>
                   <Link href="/dashboard">
                     <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
