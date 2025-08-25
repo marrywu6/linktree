@@ -87,8 +87,8 @@ function SearchParamsComponent() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">LinkTree</h1>
-          <p className="text-gray-600">Transform your bookmarks into a beautiful navigation site</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">书签树</h1>
+          <p className="text-gray-600">将您的书签转换为一个美观的导航网站</p>
         </div>
 
         {/* Search Section */}
@@ -116,7 +116,7 @@ function SearchParamsComponent() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Collections</h2>
+              <h2 className="text-lg font-semibold mb-4">书签集合</h2>
               <div className="space-y-2">
                 {collections.map((collection) => (
                   <button
@@ -137,10 +137,15 @@ function SearchParamsComponent() {
 
           {/* Bookmarks Grid */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Bookmarks</h2>
-              <p className="text-gray-600">Your bookmarks will appear here.</p>
-            </div>
+            {selectedCollectionId && (
+              <BookmarkGrid
+                collectionId={selectedCollectionId}
+                currentFolderId={currentFolderId}
+                collectionName={collectionName}
+                collectionSlug={collections.find(c => c.id === selectedCollectionId)?.slug}
+                refreshTrigger={refreshTrigger}
+              />
+            )}
           </div>
         </div>
       </div>
