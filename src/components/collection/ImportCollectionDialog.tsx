@@ -130,8 +130,8 @@ export function ImportCollectionDialog({
             if (!folderResponse.ok) {
               toast({
                 variant: "destructive",
-                title: "Folder Import Failed",
-                description: folderData.error || "An error occurred while importing folders",
+                title: "文件夹导入失败",
+                description: folderData.error || "导入文件夹时发生错误",
               });
               return;
             }
@@ -144,8 +144,8 @@ export function ImportCollectionDialog({
 
             // Show folder import progress
             toast({
-              title: "Folder Import Progress",
-              description: `Importing folders at level ${level}: Batch ${folderBatches.indexOf(folderBatch) + 1}/${folderBatches.length}`,
+              title: "文件夹导入进度",
+              description: `正在导入第 ${level} 层文件夹：批次 ${folderBatches.indexOf(folderBatch) + 1}/${folderBatches.length}`,
             });
           }
         }

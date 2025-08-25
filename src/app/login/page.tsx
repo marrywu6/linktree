@@ -34,16 +34,16 @@ export default function LoginPage() {
       if (result?.error) {
         switch (result.error) {
           case "Please enter email and password":
-            setError("Please enter email and password");
+            setError("请输入邮箱和密码");
             break;
           case "User does not exist":
-            setError("User does not exist");
+            setError("用户不存在");
             break;
           case "Incorrect password":
-            setError("Incorrect password");
+            setError("密码错误");
             break;
           default:
-            setError("Login failed, please try again");
+            setError("登录失败，请重试");
         }
       } else {
         if (initializeDatabase) {
@@ -55,12 +55,12 @@ export default function LoginPage() {
             
             if (result.status !== 'success') {
               // 处理初始化失败的情况
-              setError(result.message || "Database initialization failed");
+              setError(result.message || "数据库初始化失败");
               return;
             }
           } catch (error) {
             // 处理网络错误或解析错误
-            setError("Database initialization failed");
+            setError("数据库初始化失败");
             return;
           }
         }
@@ -68,7 +68,7 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (error) {
-      setError("Login failed, please try again");
+      setError("登录失败，请重试");
     } finally {
       setLoading(false);
     }
@@ -110,15 +110,15 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Login to Admin</h2>
-            <p className="mt-2 text-gray-600">Manage your bookmark collections</p>
+            <h2 className="text-3xl font-bold text-gray-900">管理员登录</h2>
+            <p className="mt-2 text-gray-600">访问书签管理后台</p>
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
+                  邮箱地址
                 </label>
                 <Input
                   id="email"
@@ -131,7 +131,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
+                  登录密码
                 </label>
                 <Input
                   id="password"
@@ -161,7 +161,7 @@ export default function LoginPage() {
                   checked={initializeDatabase}
                   onChange={(e) => setInitializeDatabase(e.target.checked)}
                 />
-                <span className="ml-2 text-sm text-gray-600">Initialize Database</span>
+                <span className="ml-2 text-sm text-gray-600">初始化数据库</span>
               </label>
             </div>
 
@@ -180,10 +180,10 @@ export default function LoginPage() {
               {loading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Logging in...
+                  登录中...
                 </div>
               ) : (
-                "Login"
+                "登录"
               )}
             </Button>
 

@@ -44,12 +44,12 @@ export default function RegisterPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      toast.success("Registration successful!");
+      toast.success("注册成功！");
       // 注册成功后跳转到登录页面
       router.push("/login");
     } catch (error) {
       console.error("Registration error:", error);
-      toast.error(error instanceof Error ? error.message : "Registration failed");
+      toast.error(error instanceof Error ? error.message : "注册失败，请重试");
     } finally {
       setIsLoading(false);
     }
@@ -59,13 +59,13 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Register</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle>用户注册</CardTitle>
+          <CardDescription>创建新的用户账户</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">姓名</Label>
               <Input
                 id="name"
                 name="name"
@@ -75,7 +75,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">邮箱地址</Label>
               <Input
                 id="email"
                 name="email"
@@ -86,7 +86,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">密码</Label>
               <Input
                 id="password"
                 name="password"
@@ -99,16 +99,16 @@ export default function RegisterPage() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Registering..." : "Register"}
+              {isLoading ? "注册中..." : "立即注册"}
             </Button>
             <div className="text-center text-sm">
-              Already have an account?{" "}
+              已有账户？{" "}
               <button
                 type="button"
                 className="text-primary hover:underline"
                 onClick={() => router.push("/login")}
               >
-                Sign in
+                立即登录
               </button>
             </div>
           </CardFooter>

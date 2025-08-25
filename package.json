@@ -1,8 +1,15 @@
 {
-  "name": "linktree",
-  "version": "1.0.0",
+  "name": "bookmark-navigation-tree",
+  "description": "书签导航树 - 将浏览器书签转换为精美导航网站",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
+  "keywords": ["bookmark", "navigation", "tree", "browser", "管理", "书签", "导航"],
+  "author": "书签导航树开发团队",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marrywu6/linktree.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && prisma db push && next build",
