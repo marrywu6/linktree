@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { BookmarkGrid } from "@/components/bookmark/BookmarkGrid";
-
 import { Collection } from "@prisma/client";
 import { SearchBar } from "@/components/search/SearchBar";
-import { AISearchBar } from "@/components/search/AISearchBar";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Settings, Sparkles, Grid, List, Search, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 function SearchParamsComponent() {
   const pathname = usePathname();
@@ -21,10 +20,11 @@ function SearchParamsComponent() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [collectionName, setCollectionName] = useState<string>("");
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showSearch, setShowSearch] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [useAISearch, setUseAISearch] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   const routeToFolderInCollection = (collection: Collection, folderId?: string | null) => {
     const currentSearchParams = new URLSearchParams(searchParams.toString());
@@ -76,77 +76,182 @@ function SearchParamsComponent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-600 font-medium">加载中...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">书签树</h1>
-          <p className="text-gray-600">将您的书签转换为一个美观的导航网站</p>
-        </div>
-
-        {/* Search Section */}
-        <div className="mb-8 space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              {useAISearch ? (
-                <AISearchBar />
-              ) : (
-                <SearchBar />
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo & Title */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">书</span>
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">书签树</h1>
+              </div>
             </div>
-            <Button
-              onClick={() => setUseAISearch(!useAISearch)}
-              variant={useAISearch ? "default" : "outline"}
-              size="icon"
-            >
-              <Sparkles className="h-4 w-4" />
-            </Button>
+
+            {/* Actions */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSearch(!showSearch)}
+                className={cn("hidden sm:flex", showSearch && "bg-blue-50 text-blue-600")}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                搜索
+              </Button>
+              
+              <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-7 px-2"
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-7 px-2"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm" className="hidden sm:flex">
+                  <Settings className="h-4 w-4 mr-2" />
+                  管理
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Search Bar */}
+        {showSearch && (
+          <div className="border-t border-gray-200/50 bg-white/90 backdrop-blur-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <SearchBar />
+            </div>
+          </div>
+        )}
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">书签集合</h2>
-              <div className="space-y-2">
-                {collections.map((collection) => (
+          <aside className={cn(
+            "lg:w-64 lg:flex-shrink-0",
+            sidebarOpen ? "block" : "hidden lg:block"
+          )}>
+            <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">书签分类</h2>
+                <span className="text-sm text-gray-500">{collections.length}</span>
+              </div>
+              
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {collections.map((collection, index) => (
                   <button
                     key={collection.id}
                     onClick={() => routeToFolderInCollection(collection)}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                    className={cn(
+                      "w-full text-left px-4 py-3 rounded-lg transition-all duration-200 group",
+                      "hover:bg-blue-50 hover:text-blue-700",
                       selectedCollectionId === collection.id
-                        ? "bg-blue-100 text-blue-700"
-                        : "hover:bg-gray-100"
-                    }`}
+                        ? "bg-blue-100 text-blue-700 shadow-sm"
+                        : "text-gray-700 hover:shadow-sm"
+                    )}
                   >
-                    {collection.name}
+                    <div className="flex items-center space-x-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium",
+                        selectedCollectionId === collection.id
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-600 group-hover:bg-blue-500 group-hover:text-white"
+                      )}>
+                        {collection.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{collection.name}</p>
+                        {collection.description && (
+                          <p className="text-xs text-gray-500 truncate mt-1">
+                            {collection.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
 
-          {/* Bookmarks Grid */}
-          <div className="lg:col-span-3">
-            {selectedCollectionId && (
-              <BookmarkGrid
-                collectionId={selectedCollectionId}
-                currentFolderId={currentFolderId}
-                collectionName={collectionName}
-                collectionSlug={collections.find(c => c.id === selectedCollectionId)?.slug || undefined}
-                refreshTrigger={refreshTrigger}
-              />
+              {collections.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm">暂无书签分类</p>
+                  <Link href="/dashboard">
+                    <Button variant="outline" size="sm" className="mt-2">
+                      创建分类
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1 min-w-0">
+            {selectedCollectionId ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
+                <BookmarkGrid
+                  collectionId={selectedCollectionId}
+                  currentFolderId={currentFolderId}
+                  collectionName={collectionName}
+                  collectionSlug={collections.find(c => c.id === selectedCollectionId)?.slug || undefined}
+                  refreshTrigger={refreshTrigger}
+                />
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-12 text-center">
+                <div className="max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">欢迎使用书签树</h3>
+                  <p className="text-gray-600 mb-6">开始创建您的第一个书签分类，整理您的网站收藏</p>
+                  <Link href="/dashboard">
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                      开始使用
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </div>
@@ -155,14 +260,19 @@ function SearchParamsComponent() {
 
 export default function Home() {
   return (
-    <SidebarProvider>
-      <Suspense fallback={
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-600 font-medium">加载中...</p>
+          </div>
         </div>
-      }>
-        <SearchParamsComponent />
-      </Suspense>
-    </SidebarProvider>
+      </div>
+    }>
+      <SearchParamsComponent />
+    </Suspense>
   );
 }
