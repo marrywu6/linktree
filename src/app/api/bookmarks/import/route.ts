@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
             
             if (!folderMap.has(currentPath)) {
               // 检查文件夹是否已存在
-              const existingFolder = await tx.folder.findFirst({
+              const existingFolder: any = await tx.folder.findFirst({
                 where: {
                   name: part,
                   collectionId,

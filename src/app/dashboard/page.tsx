@@ -35,7 +35,7 @@ import {
 import { BookmarkImportDialog } from "@/components/bookmark/BookmarkImportDialog"
 import { LinkCheckDialog } from "@/components/bookmark/LinkCheckDialog"
 import { CreateCollectionDialog } from "@/components/collection/CreateCollectionDialog"
-import { CreateBookmarkDialogGlobal } from "@/components/bookmark/CreateBookmarkDialogGlobal"
+import CreateBookmarkDialogGlobal from "@/components/bookmark/CreateBookmarkDialogGlobal"
 import Link from "next/link"
 
 export default function DashboardPage() {
