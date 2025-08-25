@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,7 +31,9 @@ import {
   CheckCircle,
   AlertCircle,
   Link as LinkIcon,
-  Import
+  Import,
+  User,
+  LogOut
 } from "lucide-react"
 import { BookmarkImportDialog } from "@/components/bookmark/BookmarkImportDialog"
 import { LinkCheckDialog } from "@/components/bookmark/LinkCheckDialog"
@@ -39,6 +42,7 @@ import CreateBookmarkDialogGlobal from "@/components/bookmark/CreateBookmarkDial
 import Link from "next/link"
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession();
   const [collections, setCollections] = useState([]);
   const [stats, setStats] = useState({
     totalBookmarks: 0,
@@ -107,13 +111,18 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading) {
+  if (status === "loading" || isLoading) {
     return (
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center h-screen">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-600">
+                {status === "loading" ? "验证登录状态..." : "加载数据中..."}
+              </p>
+            </div>
           </div>
         </SidebarInset>
       </SidebarProvider>
@@ -141,6 +150,25 @@ export default function DashboardPage() {
             </BreadcrumbList>
           </Breadcrumb>
           <div className="ml-auto flex items-center space-x-2">
+            {session && (
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <User className="h-4 w-4" />
+                  <span>{session.user?.name || session.user?.email}</span>
+                  {session.user?.role === 'admin' && (
+                    <Badge variant="default" className="text-xs">管理员</Badge>
+                  )}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  退出登录
+                </Button>
+              </div>
+            )}
             <Link href="/">
               <Button variant="outline" size="sm">
                 <Globe className="h-4 w-4 mr-2" />

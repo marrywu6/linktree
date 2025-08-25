@@ -96,7 +96,10 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json(collectionsWithBookmarkCount);
+    return NextResponse.json({
+      success: true,
+      data: collectionsWithBookmarkCount
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to get bookmark collections" }, { status: 500 });
@@ -109,54 +112,45 @@ export async function POST(request: Request) {
 
     if (!session) {
       return NextResponse.json(
-        { error: "Unauthorized access" },
+        { success: false, error: "需要登录才能创建集合" },
         { status: 401 }
-      );
-    }
-
-    // 检查是否已经存在任何集合
-    const existingCollections = await prisma.collection.findMany({
-      take: 1,
-    });
-
-    if (existingCollections.length > 0) {
-      return NextResponse.json(
-        {
-          error:
-            "A collection already exists. Cannot create another collection.",
-        },
-        { status: 403 }
       );
     }
 
     const body = await request.json();
     const { name, description, icon, isPublic, viewStyle, sortStyle, sortOrder } = body;
-    const slug = name ? name.toLowerCase().replace(/\s+/g, '-') : "";
+    
+    if (!name) {
+      return NextResponse.json(
+        { success: false, error: "集合名称不能为空" },
+        { status: 400 }
+      );
+    }
+    
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
 
     // 检查名称是否已存在
-    if (name) {
-      const existingCollection = await prisma.collection.findFirst({
-        where: {
-          OR: [
-            { name },
-            { slug }
-          ]
-        }
-      });
-
-      if (existingCollection) {
-        return NextResponse.json(
-          { error: "The name or slug is already in use" },
-          { status: 400 }
-        );
+    const existingCollection = await prisma.collection.findFirst({
+      where: {
+        OR: [
+          { name },
+          { slug }
+        ]
       }
+    });
+
+    if (existingCollection) {
+      return NextResponse.json(
+        { success: false, error: "集合名称已存在，请使用其他名称" },
+        { status: 400 }
+      );
     }
 
     // 创建新集合
     const collection = await prisma.collection.create({
       data: {
-        name: name || "",
-        description: description || "",
+        name: name.trim(),
+        description: description?.trim() || "",
         icon: icon || "",
         isPublic: isPublic ?? true,
         viewStyle: viewStyle || "list",
@@ -166,17 +160,30 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(collection);
+    // 创建用户与集合的关联关系
+    await prisma.userCollection.create({
+      data: {
+        userId: session.user.id,
+        collectionId: collection.id,
+        isOwner: true,
+        canEdit: true
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: collection
+    });
   } catch (error: unknown) {
-    console.error("Detailed error creating collection:", error);
+    console.error("创建集合错误:", error);
     if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(
-        { error: "Name or slug already in use" },
+        { success: false, error: "名称或标识符已被使用" },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: `Failed to create collection: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { success: false, error: `创建集合失败: ${error instanceof Error ? error.message : '未知错误'}` },
       { status: 500 }
     );
   }

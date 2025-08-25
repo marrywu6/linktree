@@ -21,48 +21,40 @@ export function parseBookmarksHtml(htmlContent: string): ParsedBookmark[] {
   const bookmarks: ParsedBookmark[] = [];
   
   try {
-    // 创建DOM解析器
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlContent, 'text/html');
+    // 服务器端需要使用JSDOM或者正则表达式解析
+    // 使用正则表达式匹配书签链接
+    const linkRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi;
+    const folderRegex = /<h3[^>]*>([^<]+)<\/h3>/gi;
     
-    // 递归解析书签文件夹
-    const parseFolder = (element: Element, folderPath = ''): void => {
-      const links = element.querySelectorAll('a[href]');
+    let folderPath = '默认收藏';
+    let match;
+    
+    // 先提取文件夹结构
+    const folderMatches = Array.from(htmlContent.matchAll(folderRegex));
+    let currentFolderIndex = 0;
+    
+    // 提取所有链接
+    while ((match = linkRegex.exec(htmlContent)) !== null) {
+      const url = match[1];
+      const title = match[2]?.trim();
       
-      links.forEach((link) => {
-        const url = link.getAttribute('href');
-        const title = link.textContent?.trim();
-        const addDate = link.getAttribute('add_date');
-        const icon = link.getAttribute('icon');
-        
-        if (url && title && !url.startsWith('javascript:')) {
-          bookmarks.push({
-            title,
-            url,
-            icon: icon || undefined,
-            addedAt: addDate ? new Date(parseInt(addDate) * 1000) : undefined,
-            folder: folderPath || '默认收藏',
-          });
+      // 检查是否在新文件夹中
+      if (currentFolderIndex < folderMatches.length) {
+        const folderMatch = folderMatches[currentFolderIndex];
+        if (folderMatch.index && match.index && folderMatch.index < match.index) {
+          folderPath = folderMatch[1]?.trim() || '默认收藏';
+          currentFolderIndex++;
         }
-      });
-
-      // 查找子文件夹
-      const subfolders = element.querySelectorAll('dt > h3');
-      subfolders.forEach((folder) => {
-        const folderName = folder.textContent?.trim() || '未命名文件夹';
-        const currentPath = folderPath ? `${folderPath}/${folderName}` : folderName;
-        
-        // 查找文件夹内容
-        const folderContent = folder.parentElement?.querySelector('dl');
-        if (folderContent) {
-          parseFolder(folderContent, currentPath);
-        }
-      });
-    };
-
-    // 开始解析
-    const body = doc.body || doc.documentElement;
-    parseFolder(body);
+      }
+      
+      if (url && title && !url.startsWith('javascript:')) {
+        bookmarks.push({
+          title,
+          url,
+          folder: folderPath,
+        });
+      }
+    }
     
   } catch (error) {
     console.error('Error parsing HTML bookmarks:', error);

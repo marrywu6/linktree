@@ -8,10 +8,13 @@
       "Bash(git reset:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)"
     ],
     "additionalDirectories": [
-      "C:\\c\\Users\\truel\\Downloads\\pintree-main"
+      "C:\\c\\Users\\truel\\Downloads\\pintree-main",
+      "C:\\c\\Users\\truel\\Downloads\\pintree-main\\pintree-main"
     ]
   }
 }

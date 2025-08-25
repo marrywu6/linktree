@@ -22,11 +22,10 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
-
 interface CreateCollectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;  // 添加这一行
+  onSuccess?: () => void;
 }
 
 export function CreateCollectionDialog({ 
@@ -40,9 +39,11 @@ export function CreateCollectionDialog({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    icon: "",
     isPublic: true,
-    // viewStyle: "list",    // 注释掉
-    // sortStyle: "alpha",   // 注释掉
+    viewStyle: "list",
+    sortStyle: "alpha",
+    sortOrder: 0
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,55 +51,51 @@ export function CreateCollectionDialog({
     setLoading(true);
 
     try {
-      const response = await fetch("/api/collections", {
-        method: "POST",
+      const response = await fetch('/api/collections', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        // 显示错误提示
+      if (data.success) {
+        toast({
+          title: "创建成功",
+          description: `集合 "${formData.name}" 已成功创建。`,
+        });
+
+        // 重置表单
+        setFormData({
+          name: "",
+          description: "",
+          icon: "",
+          isPublic: true,
+          viewStyle: "list", 
+          sortStyle: "alpha",
+          sortOrder: 0
+        });
+
+        onOpenChange(false);
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
         toast({
           variant: "destructive",
-          title: "Create Failed",
-          description: data.error || "Create collection failed"
+          title: "创建失败",
+          description: data.error || "创建集合时发生错误",
         });
-        return; // 直接返回，不关闭对话框
-      }
-
-      // 成功后的操作
-      onOpenChange(false);
-      router.refresh();
-      
-      // 重置表单
-      setFormData({
-        name: "",
-        description: "",
-        isPublic: true,
-        // viewStyle: "list",    // 注释掉
-        // sortStyle: "alpha",   // 注释掉
-      });
-
-      // 成功提示
-      toast({
-        title: "Create Success",
-        description: "Bookmark collection created",
-      });
-
-      if (onSuccess) {
-        onSuccess();
       }
     } catch (error) {
-      console.error("Create failed:", error);
-      // 错误提示
+      console.error('创建集合错误:', error);
       toast({
-        variant: "destructive",
-        title: "Create Failed",
-        description: error instanceof Error ? error.message : "An error occurred while creating the bookmark collection"
+        variant: "destructive", 
+        title: "创建失败",
+        description: "网络错误，请重试",
       });
     } finally {
       setLoading(false);
@@ -107,86 +104,99 @@ export function CreateCollectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Bookmark Collection</DialogTitle>
+          <DialogTitle>创建新集合</DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label htmlFor="name">集合名称 *</Label>
             <Input
+              id="name"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter collection name"
-              disabled={loading}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              placeholder="输入集合名称"
+              required
             />
           </div>
 
-          {/* 注释掉整个 View Style 选择框 */}
-          {/* <div className="space-y-2">
-            <Label htmlFor="viewStyle">View Style</Label>
-            <Select
-              value={formData.viewStyle}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, viewStyle: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select view style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="list">List View</SelectItem>
-                <SelectItem value="card">Card View</SelectItem>
-              </SelectContent>
-            </Select>
-          </div> */}
-
-          {/* 注释掉整个 Sort Style 选择框 */}
-          {/* <div className="space-y-2">
-            <Label htmlFor="sortStyle">Sort Style</Label>
-            <Select
-              value={formData.sortStyle}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, sortStyle: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select sort style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="alpha">Sort by Name</SelectItem>
-                <SelectItem value="time">Sort by Time</SelectItem>
-                <SelectItem value="manual">Manual Sort</SelectItem>
-              </SelectContent>
-            </Select>
-          </div> */}
           <div className="space-y-2">
-            <Label>Description</Label>
+            <Label htmlFor="description">描述</Label>
             <Textarea
+              id="description"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter collection description"
-              disabled={loading}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="输入集合描述（可选）"
+              rows={3}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label>Public Access</Label>
+          <div className="space-y-2">
+            <Label htmlFor="icon">图标URL</Label>
+            <Input
+              id="icon"
+              value={formData.icon}
+              onChange={(e) => setFormData({...formData, icon: e.target.value})}
+              placeholder="输入图标URL（可选）"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
             <Switch
+              id="isPublic"
               checked={formData.isPublic}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublic: checked }))}
-              disabled={loading}
+              onCheckedChange={(checked) => setFormData({...formData, isPublic: checked})}
             />
+            <Label htmlFor="isPublic">公开集合</Label>
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>显示样式</Label>
+              <Select
+                value={formData.viewStyle}
+                onValueChange={(value) => setFormData({...formData, viewStyle: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="list">列表</SelectItem>
+                  <SelectItem value="grid">网格</SelectItem>
+                  <SelectItem value="card">卡片</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>排序方式</Label>
+              <Select
+                value={formData.sortStyle}
+                onValueChange={(value) => setFormData({...formData, sortStyle: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alpha">按名称</SelectItem>
+                  <SelectItem value="time">按时间</SelectItem>
+                  <SelectItem value="manual">手动</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              取消
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create"}
+              {loading ? "创建中..." : "创建集合"}
             </Button>
           </div>
         </form>

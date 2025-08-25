@@ -187,6 +187,27 @@ export default function LoginPage() {
               )}
             </Button>
 
+            {/* OAuth 分隔线 */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">或者使用</span>
+              </div>
+            </div>
+
+            {/* GitHub OAuth 登录 */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 text-base"
+              onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+            >
+              <Github className="w-5 h-5 mr-2" />
+              使用 GitHub 登录
+            </Button>
+
           </form>
         </div>
       </div>
