@@ -20,7 +20,7 @@ type Props = {
 
 export const generateMetadata = async (): Promise<Metadata> => {
   return {
-    title: "LinkTree - Smart Bookmark Management & Organization Platform",
+    title: "🚀 书签导航树 - 全新重构版本 | Smart Bookmark Management & Organization Platform",
     description: "Organize, manage and share your bookmarks efficiently with LinkTree. Features AI-powered organization, custom collections, and seamless bookmark sharing for enhanced productivity.",
     keywords: "bookmark manager, bookmark organizer, bookmark collections, bookmark sharing, productivity tools, website organization, link management, bookmark tags, AI bookmarking, digital organization",
     icons: {
