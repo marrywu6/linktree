@@ -12,11 +12,13 @@
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
       "Bash(curl:*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(taskkill:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\truel\\Downloads\\pintree-main",
-      "C:\\c\\Users\\truel\\Downloads\\pintree-main\\pintree-main"
+      "C:\\c\\Users\\truel\\Downloads\\pintree-main\\pintree-main",
+      "C:\\c\\Users\\truel"
     ]
   }
 }
