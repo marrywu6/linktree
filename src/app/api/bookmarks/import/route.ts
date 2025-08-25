@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
                 parentId = existingFolder.id;
               } else {
                 // 创建新文件夹
-                const newFolder = await tx.folder.create({
+                const newFolder: any = await tx.folder.create({
                   data: {
                     name: part,
                     collectionId,
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
             }
 
             // 检查是否已存在相同URL的书签
-            const existingBookmark = await tx.bookmark.findFirst({
+            const existingBookmark: any = await tx.bookmark.findFirst({
               where: {
                 url: cleanUrl,
                 collectionId,
