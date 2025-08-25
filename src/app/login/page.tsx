@@ -1,7 +1,7 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { signIn, getProviders } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [initializeDatabase, setInitializeDatabase] = useState(true);
+  const [providers, setProviders] = useState<any>(null);
+
+  useEffect(() => {
+    // 获取可用的认证提供商
+    getProviders().then(setProviders);
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -187,26 +194,31 @@ export default function LoginPage() {
               )}
             </Button>
 
-            {/* OAuth 分隔线 */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">或者使用</span>
-              </div>
-            </div>
+            {/* OAuth 登录 - 只有在配置了GitHub时才显示 */}
+            {providers?.github && (
+              <>
+                {/* OAuth 分隔线 */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">或者使用</span>
+                  </div>
+                </div>
 
-            {/* GitHub OAuth 登录 */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-12 text-base"
-              onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-            >
-              <Github className="w-5 h-5 mr-2" />
-              使用 GitHub 登录
-            </Button>
+                {/* GitHub OAuth 登录 */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12 text-base"
+                  onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+                >
+                  <Github className="w-5 h-5 mr-2" />
+                  使用 GitHub 登录
+                </Button>
+              </>
+            )}
 
           </form>
         </div>

@@ -64,10 +64,13 @@ export const authOptions: NextAuthOptions = {
         };
       }
     }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID || "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-    })
+    // 只有在配置了GitHub OAuth时才添加GitHub Provider
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET ? [
+      GitHubProvider({
+        clientId: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      })
+    ] : [])
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
