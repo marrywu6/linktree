@@ -11,11 +11,14 @@
     "url": "https://github.com/marrywu6/linktree.git"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
-    "start": "next start",
+    "dev": "next dev -p 3000",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3000",
     "lint": "next lint",
-    "db:push": "dotenv -e .env.local -- prisma db push",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma db push --force-reset",
+    "vercel:build": "prisma generate && prisma db push && next build",
     "postinstall": "prisma generate"
   },
   "dependencies": {

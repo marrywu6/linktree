@@ -13,7 +13,9 @@
       "Bash(npm install:*)",
       "Bash(curl:*)",
       "Bash(npx prisma:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "Bash(bash:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\truel\\Downloads\\pintree-main",

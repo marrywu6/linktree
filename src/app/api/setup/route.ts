@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
+    // 测试数据库连接
+    await prisma.$connect();
+    
     // 检查是否已有用户
     const userCount = await prisma.user.count();
     if (userCount > 0) {
@@ -67,16 +70,35 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Setup error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    const errorDetails = {
+      message: errorMessage,
+      code: (error as any)?.code,
+      meta: (error as any)?.meta,
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    };
+    
     return NextResponse.json(
-      { success: false, error: '创建管理员账户失败' },
+      { 
+        success: false, 
+        error: '创建管理员账户失败',
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 // 获取系统设置状态
 export async function GET() {
   try {
+    // 首先测试数据库连接
+    await prisma.$connect();
+    
     const userCount = await prisma.user.count();
     const isSetup = userCount > 0;
 
@@ -84,14 +106,33 @@ export async function GET() {
       success: true,
       data: {
         isSetup,
-        userCount
+        userCount,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
       }
     });
   } catch (error) {
     console.error('Get setup status error:', error);
+    
+    // 返回更详细的错误信息用于调试
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    const errorDetails = {
+      message: errorMessage,
+      code: (error as any)?.code,
+      meta: (error as any)?.meta,
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    };
+    
     return NextResponse.json(
-      { success: false, error: '获取设置状态失败' },
+      { 
+        success: false, 
+        error: '获取设置状态失败',
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
