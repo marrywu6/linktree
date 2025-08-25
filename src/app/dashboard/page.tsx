@@ -440,7 +440,7 @@ export default function DashboardPage() {
           <CreateCollectionDialog
             open={showCreateDialog}
             onOpenChange={setShowCreateDialog}
-            onCollectionCreated={fetchDashboardData}
+            onSuccess={fetchDashboardData}
           />
         )}
 
@@ -455,7 +455,7 @@ export default function DashboardPage() {
           <CreateBookmarkDialogGlobal
             open={showBookmarkDialog}
             onOpenChange={setShowBookmarkDialog}
-            onBookmarkCreated={fetchDashboardData}
+            onSuccess={fetchDashboardData}
           />
         )}
       </SidebarInset>
