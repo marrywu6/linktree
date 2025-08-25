@@ -76,6 +76,7 @@ export default function SetupPage() {
       });
 
       const data = await response.json();
+      console.log('Setup response:', { status: response.status, data });
 
       if (data.success) {
         setSuccess("管理员账户创建成功！正在跳转到登录页面...");
@@ -84,6 +85,7 @@ export default function SetupPage() {
         }, 2000);
       } else {
         setError(data.error || "创建失败");
+        console.error('Setup failed:', data);
       }
     } catch (error) {
       console.error('Setup error:', error);
