@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     let foldersCreated = 0;
     const errors: string[] = [];
 
-    // 开始导入过程
+    // 开始导入过程 - 使用更长的事务超时时间
     await prisma.$transaction(async (tx) => {
       const folderMap = new Map<string, string>(); // 文件夹路径 -> 文件夹ID
 
@@ -79,32 +79,38 @@ export async function POST(request: NextRequest) {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
             
             if (!folderMap.has(currentPath)) {
-              // 检查文件夹是否已存在
-              const existingFolder: any = await tx.folder.findFirst({
-                where: {
-                  name: part,
-                  collectionId,
-                  parentId,
-                }
-              });
-
-              if (existingFolder) {
-                folderMap.set(currentPath, existingFolder.id);
-                parentId = existingFolder.id;
-              } else {
-                // 创建新文件夹
-                const newFolder: any = await tx.folder.create({
-                  data: {
+              try {
+                // 检查文件夹是否已存在
+                const existingFolder = await tx.folder.findFirst({
+                  where: {
                     name: part,
                     collectionId,
                     parentId,
-                    sortOrder: 0,
                   }
                 });
-                
-                folderMap.set(currentPath, newFolder.id);
-                parentId = newFolder.id;
-                foldersCreated++;
+
+                if (existingFolder) {
+                  folderMap.set(currentPath, existingFolder.id);
+                  parentId = existingFolder.id;
+                } else {
+                  // 创建新文件夹
+                  const newFolder = await tx.folder.create({
+                    data: {
+                      name: part,
+                      collectionId,
+                      parentId,
+                      sortOrder: 0,
+                    }
+                  });
+                  
+                  folderMap.set(currentPath, newFolder.id);
+                  parentId = newFolder.id;
+                  foldersCreated++;
+                }
+              } catch (folderError) {
+                console.error(`Error handling folder ${part}:`, folderError);
+                // 如果文件夹操作失败，跳过这个文件夹
+                continue;
               }
             } else {
               parentId = folderMap.get(currentPath)!;
@@ -134,7 +140,7 @@ export async function POST(request: NextRequest) {
             }
 
             // 检查是否已存在相同URL的书签
-            const existingBookmark: any = await tx.bookmark.findFirst({
+            const existingBookmark = await tx.bookmark.findFirst({
               where: {
                 url: cleanUrl,
                 collectionId,
@@ -161,12 +167,15 @@ export async function POST(request: NextRequest) {
             });
 
             importedCount++;
-          } catch (error) {
+          } catch (bookmarkError) {
             skippedCount++;
-            errors.push(`导入失败: ${bookmark.title} - ${error instanceof Error ? error.message : '未知错误'}`);
+            errors.push(`导入失败: ${bookmark.title} - ${bookmarkError instanceof Error ? bookmarkError.message : '未知错误'}`);
           }
         }
       }
+    }, {
+      maxWait: 20000, // 最大等待时间 20 秒
+      timeout: 30000, // 事务超时时间 30 秒
     });
 
     return NextResponse.json({
