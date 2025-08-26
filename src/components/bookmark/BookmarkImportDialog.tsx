@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,19 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { 
   Upload, 
   FileText, 
   AlertCircle, 
   CheckCircle, 
-  Folder,
   Download,
   X 
 } from "lucide-react";
-import { Collection } from "@prisma/client";
 
 interface BookmarkImportDialogProps {
   open: boolean;
@@ -40,42 +35,31 @@ interface ImportResult {
   errors: string[];
 }
 
+interface ImportProgress {
+  type: 'progress' | 'complete' | 'error';
+  message: string;
+  progress: number;
+  stats?: {
+    processed: number;
+    imported: number;
+    skipped: number;
+  };
+  result?: ImportResult;
+}
+
 export function BookmarkImportDialog({ 
   open, 
   onOpenChange,
   onImportComplete 
 }: BookmarkImportDialogProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
-  const [createFolders, setCreateFolders] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
+  const [importMessage, setImportMessage] = useState('');
+  const [currentStats, setCurrentStats] = useState<{processed: number, imported: number, skipped: number} | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string>("");
-
-  // 获取分类列表
-  useEffect(() => {
-    if (open) {
-      fetchCollections();
-    }
-  }, [open]);
-
-  const fetchCollections = async () => {
-    try {
-      const response = await fetch('/api/collections');
-      const data = await response.json();
-      if (data.success) {
-        setCollections(data.data);
-        if (data.data.length > 0) {
-          setSelectedCollectionId(data.data[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching collections:', error);
-      setError('获取分类列表失败');
-    }
-  };
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -83,6 +67,9 @@ export function BookmarkImportDialog({
       setSelectedFile(file);
       setError("");
       setImportResult(null);
+      setImportProgress(0);
+      setImportMessage('');
+      setCurrentStats(null);
     }
   };
 
@@ -93,45 +80,73 @@ export function BookmarkImportDialog({
       setSelectedFile(file);
       setError("");
       setImportResult(null);
+      setImportProgress(0);
+      setImportMessage('');
+      setCurrentStats(null);
     }
   };
 
   const handleImport = async () => {
-    if (!selectedFile || !selectedCollectionId) {
-      setError('请选择文件和目标分类');
+    if (!selectedFile) {
+      setError('请选择文件');
       return;
     }
 
     setIsImporting(true);
     setImportProgress(0);
+    setImportMessage('准备导入...');
+    setCurrentStats(null);
     setError("");
 
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('collectionId', selectedCollectionId);
-      formData.append('createFolders', createFolders.toString());
 
-      // 模拟进度更新
-      const progressInterval = setInterval(() => {
-        setImportProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
-
-      const response = await fetch('/api/bookmarks/import', {
+      // 创建 EventSource 连接
+      const response = await fetch('/api/bookmarks/import-stream', {
         method: 'POST',
         body: formData,
       });
 
-      clearInterval(progressInterval);
-      setImportProgress(100);
+      if (!response.ok) {
+        throw new Error('导入请求失败');
+      }
 
-      const data = await response.json();
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
 
-      if (data.success) {
-        setImportResult(data.data);
-        onImportComplete?.();
-      } else {
-        setError(data.error || '导入失败');
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data: ImportProgress = JSON.parse(line.substring(6));
+                
+                setImportProgress(data.progress);
+                setImportMessage(data.message);
+                
+                if (data.stats) {
+                  setCurrentStats(data.stats);
+                }
+                
+                if (data.type === 'complete' && data.result) {
+                  setImportResult(data.result);
+                  onImportComplete?.();
+                } else if (data.type === 'error') {
+                  setError(data.message);
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data:', e);
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -146,10 +161,15 @@ export function BookmarkImportDialog({
     setError("");
     setImportResult(null);
     setImportProgress(0);
+    setImportMessage('');
+    setCurrentStats(null);
     setIsImporting(false);
   };
 
   const handleClose = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
     resetDialog();
     onOpenChange(false);
   };
@@ -174,7 +194,7 @@ export function BookmarkImportDialog({
 
         <div className="space-y-6">
           {/* 文件上传区域 */}
-          {!importResult && (
+          {!importResult && !isImporting && (
             <>
               <div className="space-y-4">
                 <Label>选择书签文件</Label>
@@ -226,36 +246,6 @@ export function BookmarkImportDialog({
                 </div>
               </div>
 
-              {/* 导入选项 */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>目标分类</Label>
-                  <Select value={selectedCollectionId} onValueChange={setSelectedCollectionId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择要导入到的分类" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {collections.map((collection) => (
-                        <SelectItem key={collection.id} value={collection.id}>
-                          {collection.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="create-folders"
-                    checked={createFolders}
-                    onCheckedChange={setCreateFolders}
-                  />
-                  <Label htmlFor="create-folders" className="flex items-center space-x-2">
-                    <Folder className="h-4 w-4" />
-                    <span>保持原有文件夹结构</span>
-                  </Label>
-                </div>
-              </div>
 
               {/* 使用说明 */}
               <Alert>
@@ -280,10 +270,31 @@ export function BookmarkImportDialog({
             <div className="space-y-4">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="font-medium">正在导入书签...</p>
+                <p className="font-medium">{importMessage}</p>
                 <p className="text-sm text-gray-500">请勿关闭此窗口</p>
               </div>
               <Progress value={importProgress} className="w-full" />
+              <div className="text-center text-sm text-gray-600">
+                {importProgress}%
+              </div>
+              
+              {/* 实时统计 */}
+              {currentStats && (
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-lg font-bold text-blue-600">{currentStats.processed}</div>
+                    <div className="text-xs text-gray-600">已处理</div>
+                  </div>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-lg font-bold text-green-600">{currentStats.imported}</div>
+                    <div className="text-xs text-gray-600">已导入</div>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <div className="text-lg font-bold text-yellow-600">{currentStats.skipped}</div>
+                    <div className="text-xs text-gray-600">已跳过</div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -362,7 +373,7 @@ export function BookmarkImportDialog({
           {!importResult && !isImporting && (
             <Button 
               onClick={handleImport}
-              disabled={!selectedFile || !selectedCollectionId}
+              disabled={!selectedFile}
             >
               开始导入
             </Button>

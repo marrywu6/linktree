@@ -1,28 +1,27 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     await prisma.bookmark.delete({
       where: {
         id: params.id
       },
     });
 
-    return NextResponse.json({ message: "Delete success" });
+    return NextResponse.json({ 
+      success: true,
+      message: "书签删除成功" 
+    });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Delete bookmark failed" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "删除书签失败" }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -31,11 +30,6 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const data = await request.json();
     const bookmark = await prisma.bookmark.update({
       where: {
@@ -45,16 +39,11 @@ export async function PUT(
         title: data.title,
         url: data.url,
         description: data.description,
-        collectionId: data.collectionId,
+        folderId: data.folderId,
         isFeatured: data.isFeatured,
         icon: data.icon,
       },
       include: {
-        collection: {
-          select: {
-            name: true,
-          },
-        },
         folder: {
           select: {
             name: true,
@@ -63,10 +52,16 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(bookmark);
+    return NextResponse.json({
+      success: true,
+      data: bookmark,
+    });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Update bookmark failed" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "更新书签失败" }, 
+      { status: 500 }
+    );
   }
 }
 

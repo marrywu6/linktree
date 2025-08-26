@@ -16,7 +16,8 @@
       "Bash(taskkill:*)",
       "Bash(powershell:*)",
       "Bash(bash:*)",
-      "WebFetch(domain:linktree-eight-jade.vercel.app)"
+      "WebFetch(domain:linktree-eight-jade.vercel.app)",
+      "Bash(del src\\app\\api\\bookmarks\\import\\route.ts)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\truel\\Downloads\\pintree-main",

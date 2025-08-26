@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { BookmarkGrid } from "@/components/bookmark/BookmarkGrid";
-import { Collection } from "@prisma/client";
 import { SearchBar } from "@/components/search/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Settings, Sparkles, Grid, List, Search, Menu } from "lucide-react";
@@ -17,15 +15,12 @@ function SearchParamsComponent() {
   
   // 添加 hydrated 状态来避免 hydration 不匹配
   const [hydrated, setHydrated] = useState(false);
-  const [collectionSlug, setCollectionSlug] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
-  const [collections, setCollections] = useState<any[]>([]);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSearch, setShowSearch] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,67 +29,44 @@ function SearchParamsComponent() {
   // 处理 hydration
   useEffect(() => {
     setHydrated(true);
-    setCollectionSlug(searchParams.get("collection"));
     setFolderId(searchParams.get("folderId"));
   }, [searchParams]);
 
-  const routeToFolderInCollection = (collection: Collection, folderId?: string | null) => {
-    if (!hydrated) return; // 防止在 hydration 完成前执行
+  const routeToFolder = (folderId?: string | null) => {
+    if (!hydrated) return;
     
     const currentSearchParams = new URLSearchParams(searchParams.toString());
-    collection?.slug ? currentSearchParams.set("collection", collection.slug) : currentSearchParams.delete("collection");
     folderId ? currentSearchParams.set("folderId", folderId) : currentSearchParams.delete("folderId");
     router.push(`${pathname}?${currentSearchParams.toString()}`);
   }
 
   useEffect(() => {
-    if (!hydrated) return; // 等待 hydration 完成
+    if (!hydrated) return;
     
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // 获取集合
-        const collectionsResponse = await fetch('/api/collections');
-        const collectionsData = await collectionsResponse.json();
+        // 获取所有文件夹
+        const foldersResponse = await fetch('/api/folders');
+        const foldersData = await foldersResponse.json();
         
-        if (collectionsData.success) {
-          setCollections(collectionsData.data);
-          
-          // 选择第一个集合
-          let targetCollection;
-          if (collectionSlug) {
-            targetCollection = collectionsData.data.find((c: any) => c.slug === collectionSlug);
-          }
-          
-          if (!targetCollection && collectionsData.data.length > 0) {
-            targetCollection = collectionsData.data[0];
-          }
-          
-          if (targetCollection) {
-            setSelectedCollectionId(targetCollection.id);
-            
-            // 获取该集合的文件夹
-            const foldersResponse = await fetch(`/api/collections/${targetCollection.id}/folders`);
-            const foldersData = await foldersResponse.json();
-            
-            if (foldersData.success) {
-              setFolders(foldersData.data);
-            }
-            
-            // 获取书签（全部或指定文件夹）
-            const bookmarksUrl = selectedFolderId 
-              ? `/api/collections/${targetCollection.id}/bookmarks?folderId=${selectedFolderId}`
-              : `/api/collections/${targetCollection.id}/bookmarks`;
-              
-            const bookmarksResponse = await fetch(bookmarksUrl);
-            const bookmarksData = await bookmarksResponse.json();
-            
-            if (bookmarksData.success) {
-              setBookmarks(bookmarksData.data.bookmarks || []);
-            }
-          }
+        if (foldersData.success) {
+          setFolders(foldersData.data);
         }
+        
+        // 获取书签（全部或指定文件夹）
+        const bookmarksUrl = selectedFolderId 
+          ? `/api/bookmarks?folderId=${selectedFolderId}`
+          : '/api/bookmarks';
+          
+        const bookmarksResponse = await fetch(bookmarksUrl);
+        const bookmarksData = await bookmarksResponse.json();
+        
+        if (bookmarksData.success) {
+          setBookmarks(bookmarksData.data || []);
+        }
+        
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -103,7 +75,7 @@ function SearchParamsComponent() {
     };
 
     fetchData();
-  }, [collectionSlug, selectedFolderId, refreshTrigger, hydrated]);
+  }, [folderId, selectedFolderId, refreshTrigger, hydrated]);
 
   const handleRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);

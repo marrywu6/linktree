@@ -2,10 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-function getSearchWhereClause(query: string, scope: string, collectionId: string | null, isAuthenticated: boolean) {
+function getSearchWhereClause(query: string, folderId: string | null) {
   const baseConditions = {
     OR: [
       { title: { contains: query } },
@@ -14,53 +12,37 @@ function getSearchWhereClause(query: string, scope: string, collectionId: string
     ]
   };
 
-  if (scope === 'current' && collectionId) {
+  if (folderId) {
     return {
       AND: [
         baseConditions,
-        { collectionId: collectionId }
+        { folderId: folderId }
       ]
     };
   }
 
-  if (scope === 'all') {
-    if (isAuthenticated) {
-      return baseConditions;
-    } else {
-      return {
-        AND: [
-          baseConditions,
-          { collection: { isPublic: true } }
-        ]
-      };
-    }
-  }
-
-  return {
-    AND: [
-      baseConditions,
-      { id: 'none' }
-    ]
-  };
+  return baseConditions;
 }
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
     
     const query = searchParams.get("q");
-    const scope = searchParams.get("scope") || "all";
-    const collectionId = searchParams.get("collectionId");
+    const folderId = searchParams.get("folderId");
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = parseInt(searchParams.get("pageSize") || "100");
     const skip = (page - 1) * pageSize;
 
     if (!query) {
-      return NextResponse.json({ bookmarks: [], total: 0 });
+      return NextResponse.json({ 
+        success: true,
+        data: [], 
+        total: 0 
+      });
     }
 
-    const whereClause = getSearchWhereClause(query, scope, collectionId, !!session);
+    const whereClause = getSearchWhereClause(query, folderId);
 
     const [total, bookmarks] = await Promise.all([
       prisma.bookmark.count({
@@ -71,13 +53,6 @@ export async function GET(request: Request) {
         skip,
         take: pageSize,
         include: {
-          collection: {
-            select: {
-              name: true,
-              slug: true,
-              isPublic: true
-            }
-          },
           folder: {
             select: {
               name: true
@@ -91,7 +66,8 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({ 
-      bookmarks, 
+      success: true,
+      data: bookmarks, 
       total,
       currentPage: page,
       totalPages: Math.ceil(total / pageSize)
@@ -99,7 +75,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Search bookmarks failed:", error);
     return NextResponse.json(
-      { error: "Search bookmarks failed" },
+      { success: false, error: "搜索书签失败" },
       { status: 500 }
     );
   }
