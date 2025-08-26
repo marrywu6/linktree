@@ -97,7 +97,7 @@ function SearchParamsComponent() {
             <div className="relative">
               <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
-            <p className="text-gray-600 font-medium">Loading...</p>
+            <p className="text-gray-600 font-medium">加载中...</p>
           </div>
         </div>
       </div>
@@ -120,9 +120,9 @@ function SearchParamsComponent() {
               </button>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">B</span>
+                  <span className="text-white font-bold text-sm">书</span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">Bookmarks</h1>
+                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">我的书签</h1>
               </div>
             </div>
 
@@ -135,7 +135,7 @@ function SearchParamsComponent() {
                 className={cn("hidden sm:flex", showSearch && "bg-blue-50 text-blue-600")}
               >
                 <Search className="h-4 w-4 mr-2" />
-                Search
+                搜索
               </Button>
               
               <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
@@ -160,7 +160,7 @@ function SearchParamsComponent() {
               <Link href="/dashboard">
                 <Button variant="outline" size="sm" className="hidden sm:flex">
                   <Settings className="h-4 w-4 mr-2" />
-                  Dashboard
+                  管理
                 </Button>
               </Link>
             </div>
@@ -186,7 +186,7 @@ function SearchParamsComponent() {
           )}>
             <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">Collections</h2>
+                <h2 className="text-lg font-semibold text-gray-900">书签分类</h2>
                 <span className="text-sm text-gray-500">{collections.length}</span>
               </div>
               
@@ -227,10 +227,10 @@ function SearchParamsComponent() {
 
               {collections.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  <p className="text-sm">No collections yet</p>
+                  <p className="text-sm">暂无书签分类</p>
                   <Link href="/dashboard">
                     <Button variant="outline" size="sm" className="mt-2">
-                      Create Collection
+                      创建分类
                     </Button>
                   </Link>
                 </div>
@@ -256,11 +256,11 @@ function SearchParamsComponent() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-8 w-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 Welcome to Bookmarks v2.0</h3>
-                  <p className="text-gray-600 mb-6">✨ Completely redesigned - Modern interface, full features. Create your first bookmark collection and organize your favorite websites</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 欢迎使用我的书签系统</h3>
+                  <p className="text-gray-600 mb-6">✨ 现代化设计，简洁功能，开始导入您的浏览器书签，按文件夹整理您的网站收藏</p>
                   <Link href="/dashboard">
                     <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                      Get Started
+                      开始使用
                     </Button>
                   </Link>
                 </div>
@@ -282,7 +282,7 @@ export default function Home() {
             <div className="relative">
               <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
-            <p className="text-gray-600 font-medium">Loading...</p>
+            <p className="text-gray-600 font-medium">加载中...</p>
           </div>
         </div>
       </div>

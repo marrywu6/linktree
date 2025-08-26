@@ -94,10 +94,10 @@ export default function LoginPage() {
             className="mb-8"
           />
           <h1 className="text-4xl font-bold mb-6">
-            Welcome to LinkTree
+            欢迎使用我的书签系统
           </h1>
           <p className="text-xl opacity-90 leading-relaxed">
-            A powerful bookmark management platform to help you better organize and share web resources.
+            强大的书签管理平台，帮助您更好地整理和分享网络资源。
           </p>
         </div>
       </div>

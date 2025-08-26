@@ -140,12 +140,12 @@ export default function DashboardPage() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink href="/">
-                  Bookmarks
+                  书签首页
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                <BreadcrumbPage>管理后台</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                   <User className="h-4 w-4" />
                   <span>{session.user?.name || session.user?.email}</span>
                   {session.user?.role === 'admin' && (
-                    <Badge variant="default" className="text-xs">Admin</Badge>
+                    <Badge variant="default" className="text-xs">管理员</Badge>
                   )}
                 </div>
                 <Button 
@@ -165,14 +165,14 @@ export default function DashboardPage() {
                   onClick={() => signOut({ callbackUrl: '/' })}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
+                  退出登录
                 </Button>
               </div>
             )}
             <Link href="/">
               <Button variant="outline" size="sm">
                 <Globe className="h-4 w-4 mr-2" />
-                View Site
+                查看网站
               </Button>
             </Link>
           </div>
@@ -182,8 +182,8 @@ export default function DashboardPage() {
           {/* 页面标题和操作 */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Bookmark Dashboard</h1>
-              <p className="text-gray-600">Manage your bookmarks and collections</p>
+              <h1 className="text-2xl font-bold text-gray-900">书签管理后台</h1>
+              <p className="text-gray-600">管理您的书签和文件夹</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button 
@@ -191,21 +191,21 @@ export default function DashboardPage() {
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Bookmark
+                添加书签
               </Button>
               <Button 
                 onClick={() => setShowCreateDialog(true)}
                 variant="outline"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                New Collection
+                新建分类
               </Button>
               <Button 
                 onClick={() => setShowImportDialog(true)}
                 variant="outline"
               >
                 <Import className="h-4 w-4 mr-2" />
-                Import
+                导入书签
               </Button>
             </div>
           </div>
@@ -215,14 +215,14 @@ export default function DashboardPage() {
             <Card className="bg-white shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Bookmarks
+                  书签总数
                 </CardTitle>
                 <Bookmark className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900">{stats.totalBookmarks}</div>
                 <p className="text-xs text-gray-500">
-                  Saved websites
+                  已保存网站
                 </p>
               </CardContent>
             </Card>
@@ -230,14 +230,14 @@ export default function DashboardPage() {
             <Card className="bg-white shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
-                  Collections
+                  分类数量
                 </CardTitle>
                 <FolderOpen className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900">{stats.totalCollections}</div>
                 <p className="text-xs text-gray-500">
-                  Organized groups
+                  组织分类
                 </p>
               </CardContent>
             </Card>
@@ -245,14 +245,14 @@ export default function DashboardPage() {
             <Card className="bg-white shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
-                  Folders
+                  文件夹
                 </CardTitle>
                 <FolderOpen className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900">{stats.totalFolders}</div>
                 <p className="text-xs text-gray-500">
-                  Sub-categories
+                  子分类
                 </p>
               </CardContent>
             </Card>
@@ -265,10 +265,10 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <Bookmark className="h-5 w-5 mr-2 text-blue-600" />
-                  Bookmark Management
+                  书签管理
                 </CardTitle>
                 <CardDescription>
-                  Add, edit and organize your bookmarks
+                  添加、编辑和整理您的书签
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -277,7 +277,7 @@ export default function DashboardPage() {
                   className="w-full"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add New Bookmark
+                  添加新书签
                 </Button>
                 <Button 
                   variant="outline" 
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                   onClick={() => setShowCreateDialog(true)}
                 >
                   <FolderOpen className="h-4 w-4 mr-2" />
-                  Create Collection
+                  创建分类
                 </Button>
               </CardContent>
             </Card>
@@ -295,10 +295,10 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <Upload className="h-5 w-5 mr-2 text-green-600" />
-                  Import Bookmarks
+                  导入书签
                 </CardTitle>
                 <CardDescription>
-                  Import from Chrome, Firefox, Safari and other browsers
+                  从Chrome、Firefox、Safari等浏览器导入书签
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -316,10 +316,10 @@ export default function DashboardPage() {
                   >
                     <Download className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="text-sm text-gray-600">
-                      Click to select or drag bookmark file here
+                      点击选择书签文件或拖拽到此处
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Supports .html and .json formats
+                      支持 .html 和 .json 格式
                     </p>
                   </label>
                 </div>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                   className="w-full"
                   variant="outline"
                 >
-                  Advanced Import Options
+                  高级导入选项
                 </Button>
               </CardContent>
             </Card>
@@ -337,9 +337,9 @@ export default function DashboardPage() {
           {/* Collections Overview */}
           <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle>Your Collections</CardTitle>
+              <CardTitle>我的分类</CardTitle>
               <CardDescription>
-                Bookmark collections you've created
+                您创建的书签分类
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                           {collection.name}
                         </h3>
                         <Badge variant={collection.isPublic ? "default" : "secondary"}>
-                          {collection.isPublic ? "Public" : "Private"}
+                          {collection.isPublic ? "公开" : "私密"}
                         </Badge>
                       </div>
                       {collection.description && (
@@ -364,10 +364,10 @@ export default function DashboardPage() {
                         </p>
                       )}
                       <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>0 bookmarks</span>
+                        <span>0 个书签</span>
                         <Link href={`/?collection=${collection.slug}`}>
                           <Button variant="outline" size="sm">
-                            View
+                            查看
                           </Button>
                         </Link>
                       </div>
@@ -377,12 +377,12 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <FolderOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No collections created yet</p>
+                  <p>还没有创建任何分类</p>
                   <Button 
                     onClick={() => setShowCreateDialog(true)}
                     className="mt-4"
                   >
-                    Create Your First Collection
+                    创建第一个分类
                   </Button>
                 </div>
               )}
