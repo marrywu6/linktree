@@ -21,10 +21,11 @@ function SearchParamsComponent() {
   const [folderId, setFolderId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [folders, setFolders] = useState<any[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [collectionName, setCollectionName] = useState<string>("");
-  const [collections, setCollections] = useState<Collection[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSearch, setShowSearch] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,40 +50,60 @@ function SearchParamsComponent() {
   useEffect(() => {
     if (!hydrated) return; // 等待 hydration 完成
     
-    setCurrentFolderId(folderId);
-
-    const fetchCollectionsAndSetDefault = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/collections');
-        const data = await response.json();
         
-        if (data.success) {
-          setCollections(data.data);
+        // 获取集合
+        const collectionsResponse = await fetch('/api/collections');
+        const collectionsData = await collectionsResponse.json();
+        
+        if (collectionsData.success) {
+          setCollections(collectionsData.data);
           
+          // 选择第一个集合
           let targetCollection;
           if (collectionSlug) {
-            targetCollection = data.data.find((c: Collection) => c.slug === collectionSlug);
+            targetCollection = collectionsData.data.find((c: any) => c.slug === collectionSlug);
           }
           
-          if (!targetCollection && data.data.length > 0) {
-            targetCollection = data.data[0];
+          if (!targetCollection && collectionsData.data.length > 0) {
+            targetCollection = collectionsData.data[0];
           }
           
           if (targetCollection) {
             setSelectedCollectionId(targetCollection.id);
-            setCollectionName(targetCollection.name);
+            
+            // 获取该集合的文件夹
+            const foldersResponse = await fetch(`/api/collections/${targetCollection.id}/folders`);
+            const foldersData = await foldersResponse.json();
+            
+            if (foldersData.success) {
+              setFolders(foldersData.data);
+            }
+            
+            // 获取书签（全部或指定文件夹）
+            const bookmarksUrl = selectedFolderId 
+              ? `/api/collections/${targetCollection.id}/bookmarks?folderId=${selectedFolderId}`
+              : `/api/collections/${targetCollection.id}/bookmarks`;
+              
+            const bookmarksResponse = await fetch(bookmarksUrl);
+            const bookmarksData = await bookmarksResponse.json();
+            
+            if (bookmarksData.success) {
+              setBookmarks(bookmarksData.data.bookmarks || []);
+            }
           }
         }
       } catch (error) {
-        console.error('Error fetching collections:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCollectionsAndSetDefault();
-  }, [collectionSlug, folderId, refreshTrigger, hydrated]);
+    fetchData();
+  }, [collectionSlug, selectedFolderId, refreshTrigger, hydrated]);
 
   const handleRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
@@ -178,77 +199,134 @@ function SearchParamsComponent() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
+        <div className="flex gap-8">
+          {/* 左侧文件夹导航 */}
           <aside className={cn(
-            "lg:w-64 lg:flex-shrink-0",
+            "w-64 flex-shrink-0",
             sidebarOpen ? "block" : "hidden lg:block"
           )}>
             <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">书签分类</h2>
-                <span className="text-sm text-gray-500">{collections.length}</span>
+                <h2 className="text-lg font-semibold text-gray-900">文件夹分类</h2>
               </div>
               
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {collections.map((collection, index) => (
+              <div className="space-y-1">
+                {/* 全部书签 */}
+                <button
+                  onClick={() => setSelectedFolderId(null)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-lg transition-colors",
+                    selectedFolderId === null
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                >
+                  📚 全部书签
+                </button>
+                
+                {/* 文件夹列表 */}
+                {folders.map((folder) => (
                   <button
-                    key={collection.id}
-                    onClick={() => routeToFolderInCollection(collection)}
+                    key={folder.id}
+                    onClick={() => setSelectedFolderId(folder.id)}
                     className={cn(
-                      "w-full text-left px-4 py-3 rounded-lg transition-all duration-200 group",
-                      "hover:bg-blue-50 hover:text-blue-700",
-                      selectedCollectionId === collection.id
-                        ? "bg-blue-100 text-blue-700 shadow-sm"
-                        : "text-gray-700 hover:shadow-sm"
+                      "w-full text-left px-3 py-2 rounded-lg transition-colors",
+                      selectedFolderId === folder.id
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-700 hover:bg-gray-100"
                     )}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium",
-                        selectedCollectionId === collection.id
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-600 group-hover:bg-blue-500 group-hover:text-white"
-                      )}>
-                        {collection.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{collection.name}</p>
-                        {collection.description && (
-                          <p className="text-xs text-gray-500 truncate mt-1">
-                            {collection.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    📁 {folder.name}
                   </button>
                 ))}
+                
+                {folders.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="text-sm">暂无文件夹</p>
+                    <Link href="/dashboard">
+                      <Button variant="outline" size="sm" className="mt-2">
+                        创建分类
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
-
-              {collections.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <p className="text-sm">暂无书签分类</p>
-                  <Link href="/dashboard">
-                    <Button variant="outline" size="sm" className="mt-2">
-                      创建分类
-                    </Button>
-                  </Link>
-                </div>
-              )}
             </div>
           </aside>
 
-          {/* Main Content */}
+          {/* 右侧书签展示区域 */}
           <main className="flex-1 min-w-0">
-            {selectedCollectionId ? (
+            {bookmarks.length > 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
-                <BookmarkGrid
-                  collectionId={selectedCollectionId}
-                  currentFolderId={currentFolderId}
-                  collectionName={collectionName}
-                  collectionSlug={collections.find(c => c.id === selectedCollectionId)?.slug || undefined}
-                  refreshTrigger={refreshTrigger}
-                />
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {selectedFolderId 
+                      ? `${folders.find(f => f.id === selectedFolderId)?.name} 文件夹`
+                      : "全部书签"
+                    }
+                  </h3>
+                  <span className="text-sm text-gray-500">{bookmarks.length} 个书签</span>
+                </div>
+                
+                {/* 书签列表 */}
+                <div className="space-y-3">
+                  {bookmarks.map((bookmark) => (
+                    <div
+                      key={bookmark.id}
+                      onClick={() => window.open(bookmark.url, '_blank')}
+                      className="group cursor-pointer p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center space-x-4">
+                        {/* 图标 */}
+                        <div className="w-12 h-12 rounded-lg overflow-hidden shadow-sm flex-shrink-0 bg-gray-100">
+                          {bookmark.icon ? (
+                            <img 
+                              src={bookmark.icon} 
+                              alt={bookmark.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (nextElement) {
+                                  nextElement.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              🔗
+                            </div>
+                          )}
+                          <div className="w-full h-full hidden items-center justify-center text-gray-400">
+                            🔗
+                          </div>
+                        </div>
+                        
+                        {/* 内容 */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {bookmark.title}
+                          </h4>
+                          {bookmark.description && (
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {bookmark.description}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-2 truncate">
+                            {bookmark.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                          </p>
+                        </div>
+                        
+                        {/* 外链图标 */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-12 text-center">

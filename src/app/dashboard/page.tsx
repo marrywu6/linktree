@@ -1,39 +1,20 @@
 "use client";
 
-import { AppSidebar } from "@/components/app-sidebar"
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
   Upload, 
   Plus, 
-  BarChart3, 
-  Globe, 
   FolderOpen, 
   Bookmark,
   Download,
-  CheckCircle,
-  AlertCircle,
-  Link as LinkIcon,
   Import,
   User,
-  LogOut
+  LogOut,
+  Globe
 } from "lucide-react"
 import { BookmarkImportDialog } from "@/components/bookmark/BookmarkImportDialog"
 import { LinkCheckDialog } from "@/components/bookmark/LinkCheckDialog"
@@ -113,45 +94,30 @@ export default function DashboardPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <div className="flex items-center justify-center h-screen">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="text-gray-600">
-                {status === "loading" ? "验证登录状态..." : "加载数据中..."}
-              </p>
-            </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center h-screen">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600">
+              {status === "loading" ? "验证登录状态..." : "加载数据中..."}
+            </p>
           </div>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-white">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">
-                  书签首页
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>管理后台</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="ml-auto flex items-center space-x-2">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">书签管理后台</h1>
+            <p className="text-gray-600">管理您的书签和文件夹</p>
+          </div>
+          <div className="flex items-center space-x-4">
             {session && (
-              <div className="flex items-center space-x-4">
+              <>
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <User className="h-4 w-4" />
                   <span>{session.user?.name || session.user?.email}</span>
@@ -167,7 +133,7 @@ export default function DashboardPage() {
                   <LogOut className="h-4 w-4 mr-2" />
                   退出登录
                 </Button>
-              </div>
+              </>
             )}
             <Link href="/">
               <Button variant="outline" size="sm">
@@ -176,219 +142,204 @@ export default function DashboardPage() {
               </Button>
             </Link>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <div className="flex-1 space-y-6 p-6 bg-gray-50/50">
-          {/* 页面标题和操作 */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">书签管理后台</h1>
-              <p className="text-gray-600">管理您的书签和文件夹</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                onClick={() => setShowBookmarkDialog(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                添加书签
-              </Button>
-              <Button 
-                onClick={() => setShowCreateDialog(true)}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                新建分类
-              </Button>
-              <Button 
-                onClick={() => setShowImportDialog(true)}
-                variant="outline"
-              >
-                <Import className="h-4 w-4 mr-2" />
-                导入书签
-              </Button>
-            </div>
-          </div>
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* 快捷操作 */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          <Button 
+            onClick={() => setShowBookmarkDialog(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            添加书签
+          </Button>
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            variant="outline"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            新建分类
+          </Button>
+          <Button 
+            onClick={() => setShowImportDialog(true)}
+            variant="outline"
+          >
+            <Import className="h-4 w-4 mr-2" />
+            导入书签
+          </Button>
+        </div>
 
-          {/* 简化的统计卡片 - 只保留核心书签相关数据 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  书签总数
-                </CardTitle>
-                <Bookmark className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats.totalBookmarks}</div>
-                <p className="text-xs text-gray-500">
-                  已保存网站
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  分类数量
-                </CardTitle>
-                <FolderOpen className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats.totalCollections}</div>
-                <p className="text-xs text-gray-500">
-                  组织分类
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  文件夹
-                </CardTitle>
-                <FolderOpen className="h-4 w-4 text-purple-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats.totalFolders}</div>
-                <p className="text-xs text-gray-500">
-                  子分类
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 简化的快捷操作 - 专注书签管理 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 书签管理 */}
-            <Card className="bg-white shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <Bookmark className="h-5 w-5 mr-2 text-blue-600" />
-                  书签管理
-                </CardTitle>
-                <CardDescription>
-                  添加、编辑和整理您的书签
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  onClick={() => setShowBookmarkDialog(true)}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  添加新书签
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setShowCreateDialog(true)}
-                >
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  创建分类
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* 导入工具 */}
-            <Card className="bg-white shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <Upload className="h-5 w-5 mr-2 text-green-600" />
-                  导入书签
-                </CardTitle>
-                <CardDescription>
-                  从Chrome、Firefox、Safari等浏览器导入书签
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                  <input
-                    type="file"
-                    accept=".html,.json"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="bookmark-file"
-                  />
-                  <label 
-                    htmlFor="bookmark-file"
-                    className="cursor-pointer"
-                  >
-                    <Download className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-600">
-                      点击选择书签文件或拖拽到此处
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      支持 .html 和 .json 格式
-                    </p>
-                  </label>
-                </div>
-                <Button 
-                  onClick={() => setShowImportDialog(true)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  高级导入选项
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Collections Overview */}
+        {/* 简化的统计卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle>我的分类</CardTitle>
-              <CardDescription>
-                您创建的书签分类
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                书签总数
+              </CardTitle>
+              <Bookmark className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              {collections.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {collections.slice(0, 6).map((collection: any) => (
-                    <div
-                      key={collection.id}
-                      className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium text-gray-900 truncate">
-                          {collection.name}
-                        </h3>
-                        <Badge variant={collection.isPublic ? "default" : "secondary"}>
-                          {collection.isPublic ? "公开" : "私密"}
-                        </Badge>
-                      </div>
-                      {collection.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                          {collection.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>0 个书签</span>
-                        <Link href={`/?collection=${collection.slug}`}>
-                          <Button variant="outline" size="sm">
-                            查看
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FolderOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>还没有创建任何分类</p>
-                  <Button 
-                    onClick={() => setShowCreateDialog(true)}
-                    className="mt-4"
-                  >
-                    创建第一个分类
-                  </Button>
-                </div>
-              )}
+              <div className="text-2xl font-bold text-gray-900">{stats.totalBookmarks}</div>
+              <p className="text-xs text-gray-500">已保存网站</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                分类数量
+              </CardTitle>
+              <FolderOpen className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{stats.totalCollections}</div>
+              <p className="text-xs text-gray-500">组织分类</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">
+                文件夹
+              </CardTitle>
+              <FolderOpen className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{stats.totalFolders}</div>
+              <p className="text-xs text-gray-500">子分类</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* 功能卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Bookmark className="h-5 w-5 mr-2 text-blue-600" />
+                书签管理
+              </CardTitle>
+              <CardDescription>
+                添加、编辑和整理您的书签
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button 
+                onClick={() => setShowBookmarkDialog(true)}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                添加新书签
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowCreateDialog(true)}
+              >
+                <FolderOpen className="h-4 w-4 mr-2" />
+                创建分类
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center text-lg">
+                <Upload className="h-5 w-5 mr-2 text-green-600" />
+                导入书签
+              </CardTitle>
+              <CardDescription>
+                从Chrome、Firefox、Safari等浏览器导入书签
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  accept=".html,.json"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="bookmark-file"
+                />
+                <label 
+                  htmlFor="bookmark-file"
+                  className="cursor-pointer"
+                >
+                  <Download className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    点击选择书签文件或拖拽到此处
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    支持 .html 和 .json 格式
+                  </p>
+                </label>
+              </div>
+              <Button 
+                onClick={() => setShowImportDialog(true)}
+                className="w-full"
+                variant="outline"
+              >
+                高级导入选项
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 分类概览 */}
+        <Card className="bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle>我的分类</CardTitle>
+            <CardDescription>您创建的书签分类</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {collections.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {collections.slice(0, 6).map((collection: any) => (
+                  <div
+                    key={collection.id}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium text-gray-900 truncate">
+                        {collection.name}
+                      </h3>
+                      <Badge variant={collection.isPublic ? "default" : "secondary"}>
+                        {collection.isPublic ? "公开" : "私密"}
+                      </Badge>
+                    </div>
+                    {collection.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {collection.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>0 个书签</span>
+                      <Link href={`/?collection=${collection.slug}`}>
+                        <Button variant="outline" size="sm">
+                          查看
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FolderOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>还没有创建任何分类</p>
+                <Button 
+                  onClick={() => setShowCreateDialog(true)}
+                  className="mt-4"
+                >
+                  创建第一个分类
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
         {/* 对话框 */}
         {showImportDialog && (
@@ -421,7 +372,6 @@ export default function DashboardPage() {
             onSuccess={fetchDashboardData}
           />
         )}
-      </SidebarInset>
-    </SidebarProvider>
-  )
+    </div>
+  );
 }
