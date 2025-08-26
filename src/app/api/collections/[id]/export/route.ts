@@ -210,7 +210,7 @@ export async function GET(
     const exportData: ExportedData = {
       metadata: {
         version: "1.0.0",
-        exportedFrom:'PintreePro',
+        exportedFrom:'LinktreePro',
         exportedAt: new Date().toISOString(),
       },
       collection: {

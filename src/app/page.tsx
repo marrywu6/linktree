@@ -13,7 +13,12 @@ import Link from "next/link";
 function SearchParamsComponent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const collectionSlug = searchParams.get("collection");
+  const router = useRouter();
+  
+  // 添加 hydrated 状态来避免 hydration 不匹配
+  const [hydrated, setHydrated] = useState(false);
+  const [collectionSlug, setCollectionSlug] = useState<string | null>(null);
+  const [folderId, setFolderId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
@@ -23,10 +28,18 @@ function SearchParamsComponent() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showSearch, setShowSearch] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const router = useRouter();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // 处理 hydration
+  useEffect(() => {
+    setHydrated(true);
+    setCollectionSlug(searchParams.get("collection"));
+    setFolderId(searchParams.get("folderId"));
+  }, [searchParams]);
+
   const routeToFolderInCollection = (collection: Collection, folderId?: string | null) => {
+    if (!hydrated) return; // 防止在 hydration 完成前执行
+    
     const currentSearchParams = new URLSearchParams(searchParams.toString());
     collection?.slug ? currentSearchParams.set("collection", collection.slug) : currentSearchParams.delete("collection");
     folderId ? currentSearchParams.set("folderId", folderId) : currentSearchParams.delete("folderId");
@@ -34,7 +47,8 @@ function SearchParamsComponent() {
   }
 
   useEffect(() => {
-    const folderId = searchParams.get("folderId");
+    if (!hydrated) return; // 等待 hydration 完成
+    
     setCurrentFolderId(folderId);
 
     const fetchCollectionsAndSetDefault = async () => {
@@ -68,13 +82,14 @@ function SearchParamsComponent() {
     };
 
     fetchCollectionsAndSetDefault();
-  }, [collectionSlug, refreshTrigger]);
+  }, [collectionSlug, folderId, refreshTrigger, hydrated]);
 
   const handleRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
   }, []);
 
-  if (isLoading) {
+  // 在 hydration 完成前显示加载状态
+  if (!hydrated || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="flex items-center justify-center min-h-screen">
@@ -82,7 +97,7 @@ function SearchParamsComponent() {
             <div className="relative">
               <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
-            <p className="text-gray-600 font-medium">加载中...</p>
+            <p className="text-gray-600 font-medium">Loading...</p>
           </div>
         </div>
       </div>
@@ -105,9 +120,9 @@ function SearchParamsComponent() {
               </button>
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">书</span>
+                  <span className="text-white font-bold text-sm">B</span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">书签导航树</h1>
+                <h1 className="text-xl font-bold text-gray-900 hidden sm:block">Bookmarks</h1>
               </div>
             </div>
 
@@ -120,7 +135,7 @@ function SearchParamsComponent() {
                 className={cn("hidden sm:flex", showSearch && "bg-blue-50 text-blue-600")}
               >
                 <Search className="h-4 w-4 mr-2" />
-                搜索
+                Search
               </Button>
               
               <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
@@ -145,7 +160,7 @@ function SearchParamsComponent() {
               <Link href="/dashboard">
                 <Button variant="outline" size="sm" className="hidden sm:flex">
                   <Settings className="h-4 w-4 mr-2" />
-                  管理
+                  Dashboard
                 </Button>
               </Link>
             </div>
@@ -171,7 +186,7 @@ function SearchParamsComponent() {
           )}>
             <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">书签分类</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Collections</h2>
                 <span className="text-sm text-gray-500">{collections.length}</span>
               </div>
               
@@ -212,10 +227,10 @@ function SearchParamsComponent() {
 
               {collections.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  <p className="text-sm">暂无书签分类</p>
+                  <p className="text-sm">No collections yet</p>
                   <Link href="/dashboard">
                     <Button variant="outline" size="sm" className="mt-2">
-                      创建分类
+                      Create Collection
                     </Button>
                   </Link>
                 </div>
@@ -241,11 +256,11 @@ function SearchParamsComponent() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="h-8 w-8 text-gray-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 欢迎使用全新书签导航树系统 v2.0</h3>
-                  <p className="text-gray-600 mb-6">✨ 全新重构版本 - 现代化设计，完整功能，开始创建您的第一个书签分类，整理您的网站收藏</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 Welcome to Bookmarks v2.0</h3>
+                  <p className="text-gray-600 mb-6">✨ Completely redesigned - Modern interface, full features. Create your first bookmark collection and organize your favorite websites</p>
                   <Link href="/dashboard">
                     <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                      开始使用
+                      Get Started
                     </Button>
                   </Link>
                 </div>
@@ -267,7 +282,7 @@ export default function Home() {
             <div className="relative">
               <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
-            <p className="text-gray-600 font-medium">加载中...</p>
+            <p className="text-gray-600 font-medium">Loading...</p>
           </div>
         </div>
       </div>

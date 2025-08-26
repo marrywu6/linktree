@@ -88,13 +88,13 @@ export default function LoginPage() {
         <div className="max-w-xl mx-auto flex flex-col justify-center">
           <Image 
             src="/logo.svg"
-            alt="Pintree Logo"
+            alt="LinkTree Logo"
             width={40}
             height={40}
             className="mb-8"
           />
           <h1 className="text-4xl font-bold mb-6">
-            Welcome to Pintree
+            Welcome to LinkTree
           </h1>
           <p className="text-xl opacity-90 leading-relaxed">
             A powerful bookmark management platform to help you better organize and share web resources.
@@ -109,7 +109,7 @@ export default function LoginPage() {
           <div className="md:hidden text-center mb-8">
             <Image 
               src="/logo.svg"
-              alt="Pintree Logo"
+              alt="LinkTree Logo"
               width={60}
               height={60}
               className="mx-auto"

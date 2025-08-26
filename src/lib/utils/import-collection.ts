@@ -22,14 +22,14 @@ interface ProcessedFolder {
   parentId?: string | null;
 }
 
-interface PintreeFolder {
+interface LinktreeFolder {
   name: string;
   icon: string;
   addDate: string;
   parentId: string | null;
 }
 
-interface PintreeBookmark {
+interface LinktreeBookmark {
   title: string;
   url: string;
   icon?: string;
@@ -37,13 +37,13 @@ interface PintreeBookmark {
   folderId?: string | null;
 }
 
-interface PintreeImport {
+interface LinktreeImport {
   name: string;
-  folders: PintreeFolder[];
-  bookmarks: PintreeBookmark[];
+  folders: LinktreeFolder[];
+  bookmarks: LinktreeBookmark[];
 }
 
-export async function processImportData(jsonData: ImportNode[] | PintreeImport) {
+export async function processImportData(jsonData: ImportNode[] | LinktreeImport) {
   const folders: ProcessedFolder[] = [];
   const bookmarks: ProcessedBookmark[] = [];
   const processedFolderNames = new Set<string>();
@@ -70,9 +70,9 @@ export async function processImportData(jsonData: ImportNode[] | PintreeImport) 
   };
 
   if ('folders' in jsonData) {
-    const pintreeData = jsonData as PintreeImport;
+    const linktreeData = jsonData as LinktreeImport;
     
-    pintreeData.folders.forEach(folder => {
+    linktreeData.folders.forEach(folder => {
       if (!processedFolderNames.has(folder.name)) {
         const processedFolder: ProcessedFolder = {
           name: folder.name,
@@ -85,8 +85,8 @@ export async function processImportData(jsonData: ImportNode[] | PintreeImport) 
       }
     });
 
-    if (pintreeData.bookmarks && Array.isArray(pintreeData.bookmarks)) {
-      pintreeData.bookmarks.forEach(bookmark => {
+    if (linktreeData.bookmarks && Array.isArray(linktreeData.bookmarks)) {
+      linktreeData.bookmarks.forEach(bookmark => {
         const processedBookmark: ProcessedBookmark = {
           title: bookmark.title,
           url: bookmark.url,

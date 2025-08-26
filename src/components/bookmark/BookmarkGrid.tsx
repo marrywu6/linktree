@@ -87,6 +87,9 @@ export function BookmarkGrid({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // 添加 hydrated 状态来避免 hydration 不匹配
+  const [hydrated, setHydrated] = useState(false);
+
   // 状态管理
   const [currentBookmarks, setCurrentBookmarks] = useState<Bookmark[]>([]);
   const [subfolders, setSubfolders] = useState<SubfolderData[]>([]);
@@ -102,7 +105,14 @@ export function BookmarkGrid({
   const [currentEngine, setCurrentEngine] = useState("Bookmarks");
   const [enableSearch, setEnableSearch] = useState(true);
 
+  // 处理 hydration
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   const routeToFolderInCollection = (collectionSlug: string, folderId?: string) => {
+    if (!hydrated) return; // 防止在 hydration 完成前执行
+    
     const currentSearchParams = new URLSearchParams(searchParams.toString());
     collectionSlug ? currentSearchParams.set("collection", collectionSlug) : currentSearchParams.delete("collection");
     folderId ? currentSearchParams.set("folderId", folderId) : currentSearchParams.delete("folderId");

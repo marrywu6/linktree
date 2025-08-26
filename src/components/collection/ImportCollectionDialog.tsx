@@ -95,7 +95,7 @@ export function ImportCollectionDialog({
 
       const startTime = Date.now();
 
-      if (jsonData.metadata?.exportedFrom === "Pintree") {
+      if (jsonData.metadata?.exportedFrom === "Linktree") {
         batchSize = 50
         // Import folders first
         const folderLevels = Object.keys(jsonData.folders)
