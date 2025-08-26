@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showBookmarkDialog, setShowBookmarkDialog] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -147,13 +148,6 @@ export default function DashboardPage() {
           >
             <Plus className="h-4 w-4 mr-2" />
             添加书签
-          </Button>
-          <Button 
-            onClick={() => setShowImportDialog(true)}
-            variant="outline"
-          >
-            <Import className="h-4 w-4 mr-2" />
-            导入书签
           </Button>
           <Button 
             onClick={() => setShowImportDialog(true)}
@@ -292,9 +286,8 @@ export default function DashboardPage() {
                         variant="outline" 
                         size="sm"
                         onClick={() => {
-                          // 在dashboard内显示文件夹详情，而不是跳转
-                          // 这里可以设置一个状态来显示文件夹详情模态框
-                          console.log('显示文件夹详情:', folder.id);
+                          // 跳转到前端主页并选择该文件夹
+                          window.location.href = `/?folderId=${folder.id}`;
                         }}
                       >
                         管理
