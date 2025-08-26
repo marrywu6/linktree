@@ -11,15 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import Link from "next/link";
 import { Switch } from "@/components/ui/switch";
 import { Check, ChevronsUpDown, Folder } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -37,22 +29,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface Collection {
-  id: string;
-  name: string;
-}
-
 interface Folder {
   id: string;
   name: string;
-  parentId: string | null;  // 添加 parentId
-  displayName?: string;     // 添加 displayName
+  parentId: string | null;
+  displayName?: string;
 }
 
 interface CreateBookmarkDialogGlobalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultCollectionId?: string;
   defaultFolderId?: string;
   onSuccess?: (folderId?: string) => void;
 }
@@ -68,31 +54,25 @@ interface UrlInfo {
 export default function CreateBookmarkDialogGlobal({
   open,
   onOpenChange,
-  defaultCollectionId,
   defaultFolderId,
   onSuccess
 }: CreateBookmarkDialogGlobalProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");  // 添加错误状态
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [error, setError] = useState<string>("");
   const [folders, setFolders] = useState<Folder[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     url: "",
     description: "",
     icon: "",
-    collectionId: defaultCollectionId || "",
-    folderId: defaultFolderId || "none",
-    folderName: "", // 新增
+    folderId: defaultFolderId || "",
     isFeatured: false,
     sortOrder: 0
   });
 
-  // 添加新的状态
   const [hasLoadedInfo, setHasLoadedInfo] = useState(false);
-
-  // 添加 availableIcons 状态
   const [availableIcons, setAvailableIcons] = useState<string[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   // 修改 useEffect，当对话框关闭时重置所有状态
   useEffect(() => {
@@ -104,56 +84,30 @@ export default function CreateBookmarkDialogGlobal({
         url: "",
         description: "",
         icon: "",
-        collectionId: defaultCollectionId || "",
-        folderId: defaultFolderId || "none",
-        folderName: "",
+        folderId: defaultFolderId || "",
         isFeatured: false,
         sortOrder: 0
       });
     }
-  }, [open, defaultCollectionId, defaultFolderId]);
+  }, [open, defaultFolderId]);
 
-  // 初始化时获取集合列表
+  // 初始化时获取文件夹列表
   useEffect(() => {
-    fetchCollections();
+    fetchFolders();
   }, []);
-
-  // 当 collectionId 变化时获取文件夹列表
-  useEffect(() => {
-    if (formData.collectionId) {
-      fetchFolders(formData.collectionId);
-    }
-  }, [formData.collectionId]);
 
   // 当默认值改变时更新表单
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
-      collectionId: defaultCollectionId || "",
-      folderId: defaultFolderId || "none"
+      folderId: defaultFolderId || ""
     }));
-  }, [defaultCollectionId, defaultFolderId]);
-
-  // 在 useEffect 中设置默认文件夹名称
-  useEffect(() => {
-    if (defaultFolderId) {
-      const folder = folders.find(f => f.id === defaultFolderId);
-      if (folder) {
-        setFormData(prev => ({
-          ...prev,
-          folderName: folder.name
-        }));
-      }
-    }
-  }, [defaultFolderId, folders]);
-
-  // 在组件内部，我们将使用 props 中的 open 和 onOpenChange，而不是创建新的状态
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  }, [defaultFolderId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");  // 重置错误信息
+    setError("");
 
     try {
       const response = await fetch("/api/bookmarks", {
@@ -161,19 +115,19 @@ export default function CreateBookmarkDialogGlobal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          folderId: formData.folderId === "none" ? null : formData.folderId
+          folderId: formData.folderId || null
         }),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.error || "Create failed");
+      if (!data.success) {
+        setError(data.error || "创建失败");
         return;
       }
 
       onOpenChange(false);
-      onSuccess?.(formData.folderId === "none" ? undefined : formData.folderId);
+      onSuccess?.(formData.folderId || undefined);
       
       // 重置表单
       setFormData({
@@ -181,56 +135,35 @@ export default function CreateBookmarkDialogGlobal({
         url: "",
         description: "",
         icon: "",
-        collectionId: defaultCollectionId || "",
-        folderId: defaultFolderId || "none",
-        folderName: "", // 新增
+        folderId: defaultFolderId || "",
         isFeatured: false,
         sortOrder: 0
       });
     } catch (error) {
       console.error("Create bookmark failed:", error);
-      setError("Create bookmark failed, please try again");
+      setError("创建书签失败，请重试");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCollections = async () => {
+  const fetchFolders = async () => {
     try {
-      const response = await fetch("/api/collections");
-      const data = await response.json();
-      setCollections(data);
-    } catch (error) {
-      console.error("Failed to fetch collections:", error);
-    }
-  };
-
-  const fetchFolders = async (collectionId: string) => {
-    try {
-      const response = await fetch(`/api/collections/${collectionId}/folders?all=true`);
+      const response = await fetch("/api/folders");
       const data = await response.json();
       
-      // 指定 Map 的类型
-      const folderMap = new Map<string, Folder>(data.map((folder: Folder) => [folder.id, folder]));
-      
-      // 处理文件夹数据，添加完整路径显示
-      const processedFolders = data.map((folder: Folder) => {
-        const path: string[] = [];
-        let current: Folder | null = folder;
+      if (data.success) {
+        // 处理文件夹数据，添加完整路径显示
+        const processedFolders = data.data.map((folder: Folder) => {
+          // 简单处理，可以后续添加层级显示逻辑
+          return {
+            ...folder,
+            displayName: folder.name
+          };
+        });
         
-        // 递归构建完整路径
-        while (current) {
-          path.unshift(current.name);
-          current = current.parentId ? folderMap.get(current.parentId) || null : null;
-        }
-        
-        return {
-          ...folder,
-          displayName: path.join(" / ")
-        };
-      });
-      
-      setFolders(processedFolders);
+        setFolders(processedFolders);
+      }
     } catch (error) {
       console.error("Failed to fetch folders:", error);
     }
@@ -246,65 +179,24 @@ export default function CreateBookmarkDialogGlobal({
     }
   };
 
-  // 如果没有书签集合,显示提示信息
-  if (collections.length === 0) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Bookmark</DialogTitle>
-          </DialogHeader>
-          
-          <Alert>
-            <AlertDescription>
-              Please create a bookmark collection first.
-              <Link href="/admin/collections" className="ml-2 text-blue-600 hover:underline">
-                Go to create
-              </Link>
-            </AlertDescription>
-          </Alert>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Bookmark</DialogTitle>
+          <DialogTitle>添加书签</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="text-sm text-red-500 p-2 bg-red-50 rounded">
-              {error}
-            </div>
+            <Alert>
+              <AlertDescription className="text-red-600">
+                {error}
+              </AlertDescription>
+            </Alert>
           )}
-          
-          <div className="space-y-2">
-            <Label>Collection</Label>
-            <Select
-              value={formData.collectionId}
-              onValueChange={(value) => {
-                setFormData(prev => ({ ...prev, collectionId: value, folderId: "" }));
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a collection" />
-              </SelectTrigger>
-              <SelectContent>
-                {collections?.map((collection) => (
-                  <SelectItem key={collection.id} value={collection.id}>
-                    {collection.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="space-y-2">
-            <Label>Folder</Label>
+            <Label>文件夹</Label>
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -313,15 +205,18 @@ export default function CreateBookmarkDialogGlobal({
                   aria-expanded={popoverOpen}
                   className="w-full justify-between"
                 >
-                  {folders.find(f => f.id === formData.folderId)?.displayName || "Select a folder"}
+                  {formData.folderId ? 
+                    folders.find(f => f.id === formData.folderId)?.displayName || "选择文件夹" :
+                    "根目录"
+                  }
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
                 <Command>
-                  <CommandInput placeholder="Search folders..." />
+                  <CommandInput placeholder="搜索文件夹..." />
                   <CommandList>
-                    <CommandEmpty>No folders found</CommandEmpty>
+                    <CommandEmpty>未找到文件夹</CommandEmpty>
                     <CommandGroup>
                       <CommandItem
                         onSelect={() => {
@@ -335,7 +230,7 @@ export default function CreateBookmarkDialogGlobal({
                             !formData.folderId ? "opacity-100" : "opacity-0"
                           )}
                         />
-                        <span>Root</span>
+                        <span>📚 根目录</span>
                       </CommandItem>
                       {folders.map((folder) => (
                         <CommandItem
@@ -352,7 +247,7 @@ export default function CreateBookmarkDialogGlobal({
                             )}
                           />
                           <Folder className="mr-2 h-4 w-4" />
-                          <span>{folder.displayName}</span>
+                          <span>📁 {folder.displayName}</span>
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -363,7 +258,7 @@ export default function CreateBookmarkDialogGlobal({
           </div>
 
           <div className="space-y-2">
-            <Label>URL</Label>
+            <Label>网址</Label>
             <Input
               type="url"
               value={formData.url}
@@ -379,7 +274,7 @@ export default function CreateBookmarkDialogGlobal({
           {hasLoadedInfo && (
             <>
               <div className="space-y-2">
-                <Label>Title</Label>
+                <Label>标题</Label>
                 <Input
                   value={formData.title}
                   onChange={(e) =>
@@ -390,7 +285,7 @@ export default function CreateBookmarkDialogGlobal({
               </div>
 
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>描述</Label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) =>
@@ -400,7 +295,7 @@ export default function CreateBookmarkDialogGlobal({
               </div>
 
               <div className="space-y-2">
-                <Label>Icon URL</Label>
+                <Label>图标URL</Label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Input
@@ -426,7 +321,7 @@ export default function CreateBookmarkDialogGlobal({
                 </div>
                 {availableIcons.length > 0 && (
                   <div className="mt-2">
-                    <Label className="text-sm text-gray-500">Select an icon</Label>
+                    <Label className="text-sm text-gray-500">选择图标</Label>
                     <div className="grid grid-cols-6 gap-2 mt-1">
                       {availableIcons.map((iconUrl, index) => (
                         <button
@@ -439,7 +334,7 @@ export default function CreateBookmarkDialogGlobal({
                         >
                           <img
                             src={iconUrl}
-                            alt={`Icon ${index + 1}`}
+                            alt={`图标 ${index + 1}`}
                             className="w-6 h-6 object-contain mx-auto"
                             onError={(e) => {
                               (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
@@ -450,6 +345,17 @@ export default function CreateBookmarkDialogGlobal({
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="featured"
+                  checked={formData.isFeatured}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, isFeatured: checked }))
+                  }
+                />
+                <Label htmlFor="featured">设为精选书签</Label>
               </div>
             </>
           )}
@@ -463,7 +369,7 @@ export default function CreateBookmarkDialogGlobal({
                 onOpenChange(false);
               }}
             >
-              Cancel
+              取消
             </Button>
             <Button 
               type="submit" 
@@ -472,12 +378,12 @@ export default function CreateBookmarkDialogGlobal({
                 e.preventDefault();
                 
                 if (!formData.url) {
-                  setError("Please enter a URL");
+                  setError("请输入网址");
                   return;
                 }
 
                 if (!isValidUrl(formData.url)) {
-                  setError("Please enter a valid URL, e.g. https://example.com");
+                  setError("请输入有效的网址，例如 https://example.com");
                   return;
                 }
 
@@ -493,7 +399,7 @@ export default function CreateBookmarkDialogGlobal({
                     const data: UrlInfo = await response.json();
                     
                     if (!response.ok) {
-                      throw new Error(data.error || "Failed to get URL information");
+                      throw new Error(data.error || "获取网址信息失败");
                     }
                     
                     setFormData(prev => ({
@@ -506,7 +412,7 @@ export default function CreateBookmarkDialogGlobal({
                     setHasLoadedInfo(true);
                   } catch (error) {
                     console.error("Failed to get URL information:", error);
-                    setError(error instanceof Error ? error.message : "Failed to get URL information");
+                    setError(error instanceof Error ? error.message : "获取网址信息失败");
                   } finally {
                     setLoading(false);
                   }
@@ -515,7 +421,7 @@ export default function CreateBookmarkDialogGlobal({
                 }
               }}
             >
-              {loading ? "Getting..." : (hasLoadedInfo ? "Create" : "Get Info")}
+              {loading ? "获取中..." : (hasLoadedInfo ? "创建" : "获取信息")}
             </Button>
           </div>
         </form>

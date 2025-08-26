@@ -25,20 +25,51 @@ function SearchParamsComponent() {
   const [showSearch, setShowSearch] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [bookmarksLoading, setBookmarksLoading] = useState(false);
 
   // 处理 hydration
   useEffect(() => {
     setHydrated(true);
-    setFolderId(searchParams.get("folderId"));
+    const folderIdFromUrl = searchParams.get("folderId");
+    setSelectedFolderId(folderIdFromUrl);
+    setFolderId(folderIdFromUrl);
   }, [searchParams]);
 
-  const routeToFolder = (folderId?: string | null) => {
+  const handleFolderClick = useCallback(async (folderId: string | null) => {
     if (!hydrated) return;
     
+    setSelectedFolderId(folderId);
+    setBookmarksLoading(true);
+    
+    try {
+      // 获取书签（全部或指定文件夹）
+      const bookmarksUrl = folderId 
+        ? `/api/bookmarks?folderId=${folderId}`
+        : '/api/bookmarks';
+        
+      const bookmarksResponse = await fetch(bookmarksUrl);
+      const bookmarksData = await bookmarksResponse.json();
+      
+      if (bookmarksData.success) {
+        setBookmarks(bookmarksData.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error);
+    } finally {
+      setBookmarksLoading(false);
+    }
+    
+    // 更新URL但不刷新页面
     const currentSearchParams = new URLSearchParams(searchParams.toString());
     folderId ? currentSearchParams.set("folderId", folderId) : currentSearchParams.delete("folderId");
-    router.push(`${pathname}?${currentSearchParams.toString()}`);
-  }
+    
+    // 使用replace而不是push，避免页面刷新
+    window.history.replaceState(null, '', `${pathname}?${currentSearchParams.toString()}`);
+  }, [hydrated, searchParams, pathname]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -76,10 +107,6 @@ function SearchParamsComponent() {
 
     fetchData();
   }, [folderId, selectedFolderId, refreshTrigger, hydrated]);
-
-  const handleRefresh = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-  }, []);
 
   // 在 hydration 完成前显示加载状态
   if (!hydrated || isLoading) {
@@ -185,7 +212,7 @@ function SearchParamsComponent() {
               <div className="space-y-1">
                 {/* 全部书签 */}
                 <button
-                  onClick={() => setSelectedFolderId(null)}
+                  onClick={() => handleFolderClick(null)}
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-lg transition-colors",
                     selectedFolderId === null
@@ -200,7 +227,7 @@ function SearchParamsComponent() {
                 {folders.map((folder) => (
                   <button
                     key={folder.id}
-                    onClick={() => setSelectedFolderId(folder.id)}
+                    onClick={() => handleFolderClick(folder.id)}
                     className={cn(
                       "w-full text-left px-3 py-2 rounded-lg transition-colors",
                       selectedFolderId === folder.id
@@ -228,7 +255,14 @@ function SearchParamsComponent() {
 
           {/* 右侧书签展示区域 */}
           <main className="flex-1 min-w-0">
-            {bookmarks.length > 0 ? (
+            {bookmarksLoading ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-12 text-center">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                  <span className="text-gray-600">加载书签中...</span>
+                </div>
+              </div>
+            ) : bookmarks.length > 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">

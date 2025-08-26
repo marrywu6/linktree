@@ -288,11 +288,17 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm text-gray-500">
                       <span>{folder._count.bookmarks} 个书签</span>
-                      <a href={`/?folderId=${folder.id}`}>
-                        <Button variant="outline" size="sm">
-                          查看
-                        </Button>
-                      </a>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // 在dashboard内显示文件夹详情，而不是跳转
+                          // 这里可以设置一个状态来显示文件夹详情模态框
+                          console.log('显示文件夹详情:', folder.id);
+                        }}
+                      >
+                        管理
+                      </Button>
                     </div>
                   </div>
                 ))}
