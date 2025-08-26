@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
                     collectionId,
                     parentId,
                   }
-                });
+                }) as { id: string } | null;
 
                 if (existingFolder) {
                   folderMap.set(currentPath, existingFolder.id);
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
                       parentId,
                       sortOrder: 0,
                     }
-                  });
+                  }) as { id: string };
                   
                   folderMap.set(currentPath, newFolder.id);
                   parentId = newFolder.id;
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
                 url: cleanUrl,
                 collectionId,
               }
-            });
+            }) as { id: string } | null;
 
             if (existingBookmark) {
               skippedCount++;
