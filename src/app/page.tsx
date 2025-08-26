@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { SearchBar } from "@/components/search/SearchBar";
 import { Button } from "@/components/ui/button";
-import { Settings, Sparkles, Grid, List, Search, Menu } from "lucide-react";
+import { Settings, Sparkles, Grid, List, Search, Menu, ChevronRight, ChevronDown, File, FolderOpen, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -13,7 +13,6 @@ function SearchParamsComponent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  // 添加 hydrated 状态来避免 hydration 不匹配
   const [hydrated, setHydrated] = useState(false);
   const [folderId, setFolderId] = useState<string | null>(null);
 
@@ -21,11 +20,13 @@ function SearchParamsComponent() {
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showSearch, setShowSearch] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [bookmarksLoading, setBookmarksLoading] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
 
   // 处理 hydration
   useEffect(() => {
@@ -42,7 +43,6 @@ function SearchParamsComponent() {
     setBookmarksLoading(true);
     
     try {
-      // 获取书签（全部或指定文件夹）
       const bookmarksUrl = folderId 
         ? `/api/bookmarks?folderId=${folderId}`
         : '/api/bookmarks';
@@ -59,16 +59,25 @@ function SearchParamsComponent() {
       setBookmarksLoading(false);
     }
     
-    // 更新URL但不刷新页面
     const currentSearchParams = new URLSearchParams(searchParams.toString());
     folderId ? currentSearchParams.set("folderId", folderId) : currentSearchParams.delete("folderId");
-    
-    // 使用replace而不是push，避免页面刷新
     window.history.replaceState(null, '', `${pathname}?${currentSearchParams.toString()}`);
   }, [hydrated, searchParams, pathname]);
 
   const handleRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  const toggleFolder = useCallback((folderId: string) => {
+    setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId);
+      } else {
+        newSet.add(folderId);
+      }
+      return newSet;
+    });
   }, []);
 
   useEffect(() => {
@@ -78,15 +87,16 @@ function SearchParamsComponent() {
       try {
         setIsLoading(true);
         
-        // 获取所有文件夹
         const foldersResponse = await fetch('/api/folders');
         const foldersData = await foldersResponse.json();
         
         if (foldersData.success) {
           setFolders(foldersData.data);
+          // 默认展开所有顶级文件夹
+          const topLevelFolders = foldersData.data.filter((f: any) => !f.parentId);
+          setExpandedFolders(new Set(topLevelFolders.map((f: any) => f.id)));
         }
         
-        // 获取书签（全部或指定文件夹）
         const bookmarksUrl = selectedFolderId 
           ? `/api/bookmarks?folderId=${selectedFolderId}`
           : '/api/bookmarks';
@@ -108,26 +118,120 @@ function SearchParamsComponent() {
     fetchData();
   }, [folderId, selectedFolderId, refreshTrigger, hydrated]);
 
-  // 在 hydration 完成前显示加载状态
-  if (!hydrated || isLoading) {
+  // 构建文件夹树结构
+  const buildFolderTree = useCallback((folders: any[]) => {
+    const folderMap = new Map();
+    const rootFolders: any[] = [];
+
+    // 创建文件夹映射
+    folders.forEach(folder => {
+      folderMap.set(folder.id, { ...folder, children: [] });
+    });
+
+    // 构建树结构
+    folders.forEach(folder => {
+      const folderNode = folderMap.get(folder.id);
+      if (folder.parentId && folderMap.has(folder.parentId)) {
+        folderMap.get(folder.parentId).children.push(folderNode);
+      } else {
+        rootFolders.push(folderNode);
+      }
+    });
+
+    return rootFolders;
+  }, []);
+
+  // 渲染文件夹树节点
+  const renderFolderNode = useCallback((folder: any, level: number = 0) => {
+    const isExpanded = expandedFolders.has(folder.id);
+    const isSelected = selectedFolderId === folder.id;
+    const hasChildren = folder.children && folder.children.length > 0;
+    const indentWidth = level * 16;
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            </div>
-            <p className="text-gray-600 font-medium">加载中...</p>
+      <div key={folder.id}>
+        <div
+          className={cn(
+            "flex items-center py-1 px-2 hover:bg-gray-100 cursor-pointer transition-colors text-sm",
+            isSelected && "bg-blue-100 text-blue-700 font-medium"
+          )}
+          style={{ paddingLeft: `${indentWidth + 8}px` }}
+          onClick={() => handleFolderClick(folder.id)}
+        >
+          {hasChildren && (
+            <button
+              className="mr-1 p-0.5 hover:bg-gray-200 rounded"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFolder(folder.id);
+              }}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3 w-3 text-gray-500" />
+              ) : (
+                <ChevronRight className="h-3 w-3 text-gray-500" />
+              )}
+            </button>
+          )}
+          
+          {!hasChildren && <div className="w-4 mr-1" />}
+          
+          <div className="mr-2">
+            {hasChildren ? (
+              isExpanded ? (
+                <FolderOpen className="h-4 w-4 text-blue-500" />
+              ) : (
+                <Folder className="h-4 w-4 text-blue-600" />
+              )
+            ) : (
+              <Folder className="h-4 w-4 text-gray-500" />
+            )}
           </div>
+          
+          <span className="truncate flex-1">{folder.name}</span>
+          
+          {folder._count?.bookmarks > 0 && (
+            <span className="text-xs text-gray-400 ml-1">
+              {folder._count.bookmarks}
+            </span>
+          )}
         </div>
+        
+        {hasChildren && isExpanded && (
+          <div>
+            {folder.children.map((child: any) => renderFolderNode(child, level + 1))}
+          </div>
+        )}
       </div>
     );
-  }
+  }, [expandedFolders, selectedFolderId, handleFolderClick, toggleFolder]);
+
+  // 获取文件图标
+  const getBookmarkIcon = (bookmark: any) => {
+    if (bookmark.icon) {
+      return (
+        <img 
+          src={bookmark.icon} 
+          alt=""
+          className="w-4 h-4 object-contain"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+            if (e.currentTarget.nextElementSibling) {
+              (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'inline-block';
+            }
+          }}
+        />
+      );
+    }
+    return <File className="h-4 w-4 text-gray-400" />;
+  };
+
+  const folderTree = buildFolderTree(folders);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/50 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo & Title */}
@@ -189,7 +293,7 @@ function SearchParamsComponent() {
 
         {/* Search Bar */}
         {showSearch && (
-          <div className="border-t border-gray-200/50 bg-white/90 backdrop-blur-sm">
+          <div className="border-t border-gray-200 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <SearchBar />
             </div>
@@ -197,161 +301,139 @@ function SearchParamsComponent() {
         )}
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* 左侧文件夹导航 */}
-          <aside className={cn(
-            "w-64 flex-shrink-0",
-            sidebarOpen ? "block" : "hidden lg:block"
-          )}>
-            <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">文件夹分类</h2>
+      <div className="flex h-[calc(100vh-4rem)]">
+        {/* 左侧文件浏览器风格的导航 */}
+        <aside className={cn(
+          "w-80 bg-white border-r border-gray-200 overflow-hidden flex flex-col",
+          sidebarOpen ? "block" : "hidden lg:flex"
+        )}>
+          {/* 资源管理器标题 */}
+          <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">资源管理器</h2>
+          </div>
+          
+          {/* 文件夹树 */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-2">
+              {/* 根目录 - 全部书签 */}
+              <div
+                className={cn(
+                  "flex items-center py-1 px-2 hover:bg-gray-100 cursor-pointer transition-colors text-sm rounded",
+                  selectedFolderId === null && "bg-blue-100 text-blue-700 font-medium"
+                )}
+                onClick={() => handleFolderClick(null)}
+              >
+                <div className="w-4 mr-1" />
+                <Folder className="h-4 w-4 text-blue-600 mr-2" />
+                <span className="truncate flex-1">全部书签</span>
+                <span className="text-xs text-gray-400 ml-1">
+                  {bookmarks.length}
+                </span>
               </div>
               
-              <div className="space-y-1">
-                {/* 全部书签 */}
-                <button
-                  onClick={() => handleFolderClick(null)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 rounded-lg transition-colors",
-                    selectedFolderId === null
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-700 hover:bg-gray-100"
-                  )}
-                >
-                  📚 全部书签
-                </button>
-                
-                {/* 文件夹列表 */}
-                {folders.map((folder) => (
-                  <button
-                    key={folder.id}
-                    onClick={() => handleFolderClick(folder.id)}
-                    className={cn(
-                      "w-full text-left px-3 py-2 rounded-lg transition-colors",
-                      selectedFolderId === folder.id
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    )}
-                  >
-                    📁 {folder.name}
-                  </button>
-                ))}
-                
-                {folders.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p className="text-sm">暂无文件夹</p>
-                    <Link href="/dashboard">
-                      <Button variant="outline" size="sm" className="mt-2">
-                        创建分类
-                      </Button>
-                    </Link>
-                  </div>
-                )}
+              {/* 文件夹树结构 */}
+              {folderTree.map(folder => renderFolderNode(folder, 0))}
+              
+              {folders.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Folder className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">暂无文件夹</p>
+                  <Link href="/dashboard">
+                    <Button variant="outline" size="sm" className="mt-2">
+                      导入书签
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* 右侧书签内容区域 */}
+        <main className="flex-1 overflow-hidden bg-white">
+          {/* 内容头部 */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedFolderId 
+                    ? folders.find(f => f.id === selectedFolderId)?.name || "未知文件夹"
+                    : "全部书签"
+                  }
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {bookmarksLoading ? "加载中..." : `${bookmarks.length} 个书签`}
+                </p>
               </div>
             </div>
-          </aside>
+          </div>
 
-          {/* 右侧书签展示区域 */}
-          <main className="flex-1 min-w-0">
+          {/* 书签内容 */}
+          <div className="flex-1 overflow-y-auto p-6">
             {bookmarksLoading ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-12 text-center">
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+              <div className="flex items-center justify-center h-64">
+                <div className="flex items-center space-x-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   <span className="text-gray-600">加载书签中...</span>
                 </div>
               </div>
             ) : bookmarks.length > 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {selectedFolderId 
-                      ? `${folders.find(f => f.id === selectedFolderId)?.name} 文件夹`
-                      : "全部书签"
-                    }
-                  </h3>
-                  <span className="text-sm text-gray-500">{bookmarks.length} 个书签</span>
-                </div>
-                
-                {/* 书签列表 */}
-                <div className="space-y-3">
-                  {bookmarks.map((bookmark) => (
-                    <div
-                      key={bookmark.id}
-                      onClick={() => window.open(bookmark.url, '_blank')}
-                      className="group cursor-pointer p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-center space-x-4">
-                        {/* 图标 */}
-                        <div className="w-12 h-12 rounded-lg overflow-hidden shadow-sm flex-shrink-0 bg-gray-100">
-                          {bookmark.icon ? (
-                            <img 
-                              src={bookmark.icon} 
-                              alt={bookmark.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                                if (nextElement) {
-                                  nextElement.style.display = 'flex';
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              🔗
-                            </div>
-                          )}
-                          <div className="w-full h-full hidden items-center justify-center text-gray-400">
-                            🔗
-                          </div>
-                        </div>
-                        
-                        {/* 内容 */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {bookmark.title}
-                          </h4>
-                          {bookmark.description && (
-                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                              {bookmark.description}
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-500 mt-2 truncate">
-                            {bookmark.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                          </p>
-                        </div>
-                        
-                        {/* 外链图标 */}
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </div>
-                      </div>
+              <div className="space-y-1">
+                {bookmarks.map((bookmark) => (
+                  <div
+                    key={bookmark.id}
+                    onClick={() => window.open(bookmark.url, '_blank')}
+                    className="flex items-center py-2 px-3 hover:bg-gray-50 cursor-pointer transition-colors rounded group"
+                  >
+                    <div className="mr-3 flex-shrink-0">
+                      {getBookmarkIcon(bookmark)}
+                      <File className="h-4 w-4 text-gray-400 hidden" />
                     </div>
-                  ))}
-                </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                        {bookmark.title}
+                      </p>
+                      {bookmark.description && (
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {bookmark.description}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400 truncate mt-0.5">
+                        {bookmark.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                      </p>
+                    </div>
+
+                    {/* 外链图标 */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200/50 p-12 text-center">
-                <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">🎉 欢迎使用我的书签系统</h3>
-                  <p className="text-gray-600 mb-6">✨ 现代化设计，简洁功能，开始导入您的浏览器书签，按文件夹整理您的网站收藏</p>
-                  <Link href="/dashboard">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                      开始使用
-                    </Button>
-                  </Link>
-                </div>
+              <div className="flex flex-col items-center justify-center h-64">
+                <Sparkles className="h-16 w-16 text-gray-300 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {selectedFolderId ? "此文件夹为空" : "欢迎使用书签管理"}
+                </h3>
+                <p className="text-gray-600 mb-6 text-center max-w-md">
+                  {selectedFolderId 
+                    ? "这个文件夹还没有书签，您可以导入或手动添加书签。"
+                    : "开始导入您的浏览器书签，按文件夹整理您的网站收藏。"
+                  }
+                </p>
+                <Link href="/dashboard">
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    {selectedFolderId ? "添加书签" : "开始使用"}
+                  </Button>
+                </Link>
               </div>
             )}
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );
